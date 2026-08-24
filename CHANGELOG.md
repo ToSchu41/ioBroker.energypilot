@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 - 2026-08-24
+
+- German is now the default language of the admin configuration.
+- Complete German labels, help texts and option names for the current jsonConfig UI.
+- English remains available through i18n translations.
+- German default device names for battery, heat pump and heating rod.
+
 ## 0.1.0 - 2026-08-24
 
 - Initial Energy Pilot adapter foundation.

@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "energypilot",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "title": "Energy Pilot",
     "titleLang": {
       "en": "Energy Pilot",
@@ -9,7 +9,7 @@
     },
     "desc": {
       "en": "Manufacturer-independent predictive energy management with PV, battery, heat pump, heating rod and HVAC control.",
-      "de": "Herstellerunabh\u00e4ngiges vorausschauendes Energiemanagement f\u00fcr PV, Speicher, W\u00e4rmepumpe, Heizstab und Klimaanlagen."
+      "de": "Herstellerunabhängiges vorausschauendes Energiemanagement für PV, Speicher, Wärmepumpe, Heizstab und Klimaanlagen."
     },
     "authors": [
       "Tobias Schu <toschu41@users.noreply.github.com>"
@@ -71,7 +71,7 @@
     "learningEnabled": true,
     "historyDays": 30,
     "batteryEnabled": false,
-    "batteryName": "Battery",
+    "batteryName": "Batteriespeicher",
     "batteryPriority": 30,
     "batterySocState": "",
     "batteryPowerState": "",
@@ -90,7 +90,7 @@
     "batteryMaxSoc": 100,
     "batteryForecastControl": true,
     "heatPumpEnabled": false,
-    "heatPumpName": "Heat pump",
+    "heatPumpName": "Wärmepumpe",
     "heatPumpPriority": 20,
     "heatPumpPowerState": "",
     "heatPumpMeasurementMode": "device",
@@ -111,7 +111,7 @@
     "heatPumpOnDelaySec": 300,
     "heatPumpOffDelaySec": 600,
     "heaterEnabled": false,
-    "heaterName": "Heating rod",
+    "heaterName": "Heizstab",
     "heaterPriority": 80,
     "heaterPowerW": 3000,
     "heaterMeasurementMode": "none",
