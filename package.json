@@ -1,0 +1,43 @@
+{
+  "name": "iobroker.energypilot",
+  "version": "0.1.0",
+  "description": "Manufacturer-independent predictive energy management for ioBroker",
+  "author": "Tobias Schu",
+  "license": "MIT",
+  "homepage": "https://github.com/ToSchu41/ioBroker.energypilot",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ToSchu41/ioBroker.energypilot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ToSchu41/ioBroker.energypilot/issues"
+  },
+  "keywords": [
+    "ioBroker",
+    "energy",
+    "PV",
+    "battery",
+    "heat pump",
+    "HVAC",
+    "energy management"
+  ],
+  "main": "main.js",
+  "files": [
+    "admin/",
+    "lib/",
+    "io-package.json",
+    "LICENSE",
+    "main.js",
+    "README.md"
+  ],
+  "dependencies": {
+    "@iobroker/adapter-core": "^3.4.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "check": "node --check main.js && node --test test/*.test.js"
+  }
+}
