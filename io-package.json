@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "energypilot",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "title": "Energy Pilot",
     "titleLang": {
       "en": "Energy Pilot",
@@ -124,7 +124,13 @@
     "heaterMaxRunMin": 60,
     "climates": [],
     "batteryPowerSign": "chargePositive",
-    "heatPumpBoostPowerW": 2000
+    "heatPumpBoostPowerW": 2000,
+    "pvForecastTomorrowState": "",
+    "pvForecastPowerNowState": "",
+    "pvForecastInstalledState": "",
+    "weatherSourceMode": "daswetter",
+    "dasWetterBasePath": "daswetter.0",
+    "dasWetterLocation": "Location_1"
   },
   "objects": []
 }

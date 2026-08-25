@@ -1,88 +1,113 @@
-# ioBroker.energyPilot
+# Energy Pilot – ioBroker Energiemanagement
 
-**Energy Pilot** is a manufacturer-independent, predictive energy-management adapter for ioBroker.
+**Energy Pilot** ist ein herstellerunabhängiger ioBroker-Adapter für ein lokales, vorausschauendes Energiemanagement. Er koordiniert PV-Erzeugung, Batteriespeicher und flexible elektrische Verbraucher anhand des aktuellen Energieflusses, frei einstellbarer Prioritäten sowie PV-, Wetter- und Verbrauchsprognosen.
 
-Version **0.1.0** is the first functional foundation discussed for systems with PV generation, a grid meter, hybrid inverter / battery storage, heat pump, heating rod and air-conditioning units.
+> **Version 0.2.0:** frühe Entwicklungs- und Testversion. Der Testbetrieb ist standardmäßig aktiv, sodass zunächst keine Stellwerte an Geräte geschrieben werden.
 
-## Design principles
+## Ziele
 
-- No vendor lock-in: all device functions are mapped to freely selectable ioBroker states.
-- Device safety remains inside the devices. Energy Pilot only provides optimization setpoints/releases.
-- Missing energy meters are allowed. Measurement sources can be `external meter`, `device reported`, `estimated` or `none`.
-- PV/storage may be configured together in the Admin UI while remaining logically separated internally.
-- Weather and PV forecast values are read from existing ioBroker states (for example `dasWetter` or a PV forecast adapter); Energy Pilot does not call those APIs directly.
-- Lower numerical priority means higher priority.
+- lokale, herstellerunabhängige Steuerung über vorhandene ioBroker-Datenpunkte
+- Geräte behalten ihre eigenen Schutz- und Sicherheitsfunktionen
+- frei veränderbare Prioritäten für flexible Verbraucher
+- tatsächliche Verbrauchsmessung über optionale Energiemeter
+- vorausschauende Batterie-, Wärme- und Klimasteuerung
+- übersichtliche, deutschsprachige Admin-Oberfläche
 
-## V0.1 functions
+## Unterstützte Bereiche
 
-- Grid meter and PV power acquisition with configurable grid-sign convention.
-- Derived or directly measured house consumption.
-- Optional PV forecast: today, remaining today, next 3 hours.
-- Optional weather input: current/average/max temperature and cloud cover.
-- Weather-aware daily consumption forecast with configurable heating/cooling coefficients and learned historical baseline.
-- Battery SOC/power acquisition and generic external charge/discharge control by power, current, percent or boolean setpoints.
-- Forecast-aware battery charging moderation.
-- Heat-pump PV boost by boolean/SG-Ready-like state or by heating/hot-water target temperatures.
-- Separate heating-rod surplus control.
-- Multiple air-conditioning devices with PV pre-cooling/pre-heating.
-- Hysteresis and delays for thermal loads.
-- Per-device priorities.
-- Dry-run commissioning mode.
-- Diagnostic states with current balance, forecast, measurement quality, active flexible loads and decision reasons.
+### PV & Batteriespeicher
+- Netzleistung am zentralen Energiemeter
+- aktuelle PV-Leistung
+- Hybrid-Wechselrichter oder getrennte PV-/Speichersysteme über freie Datenpunktzuordnung
+- Batterie-SOC und Batterieleistung
+- externe Lade- und Entladevorgaben als Leistung, Strom, Prozent oder Boolean
+- Min-, Reserve-, Ziel- und Max-SOC
+- prognoseabhängige Ladeoptimierung
+- optionale externe Energiemeter
 
-## Installation from GitHub
+### Wetter & Prognosen
+- vorhandene PV-Prognosedaten aus beliebigen ioBroker-Adaptern
+- heute, Rest des Tages, morgen, aktuelle Leistungsprognose und optional 3-Stunden-Prognose
+- automatische Einheitenumrechnung von Wh/kWh/MWh
+- automatische 24-Stunden-Auswertung von **ioBroker.daswetter** über einen einzigen Basispfad
+- Temperatur, Bewölkung, Luftfeuchtigkeit, Wind und Niederschlagswahrscheinlichkeit
+- wetterabhängige Verbrauchsprognose
+- lernbarer historischer Grundverbrauch
 
-Upload this repository to GitHub, then install it in ioBroker from the GitHub/custom adapter installation function using the repository URL.
+### Wärmepumpe
+- PV-Boost / SG-Ready oder Temperatur-Sollwerte
+- eigener Prioritätswert
+- Ein-/Ausschalthysterese und Verzögerungen
+- optionale Messwerte und optionaler externer Energiemeter
 
-After installation, create an instance and configure it in the clearly separated Admin tabs.
+### Heizstab
+- separater flexibler Verbraucher mit eigener Priorität
+- Überschussschwellen und Zeitbedingungen
+- optionaler Energiemeter
 
-**Keep `Dry run` enabled during initial commissioning.** Verify grid sign, power values and all target states before enabling writes.
+### Klimaanlagen
+- beliebig viele Geräte
+- PV-Vorkühlen und PV-Vorheizen
+- Solltemperaturen und Betriebsmodi
+- individuelle Prioritäten und Schaltschwellen
+- geräteeigene, externe, geschätzte oder keine Leistungsmessung
 
-## Admin areas
+## Einheiten
 
-1. Central settings
-2. PV & storage
-3. Weather & forecasts
-4. Heat pump
-5. Heating rod
-6. Air conditioning
-7. Priorities & regulation
-8. Diagnostics
+Energy Pilot liest bei verknüpften ioBroker-Objekten `common.unit` aus und normalisiert wichtige Größen intern:
 
-## Measurement model
+- Leistung: W, kW, MW → **W**
+- Energie: Wh, kWh, MWh → **kWh**
+- SOC: **%**
+- Temperatur: **°C**
+- Strom: **A**
+- Spannung: **V**
 
-Each controllable device can use one of these energy measurement qualities:
+Die erkannte Quelleinheit wird zusätzlich in den Diagnose-Datenpunkten ausgegeben.
 
-- `measured` – external dedicated energy meter
-- `deviceReported` – power value from the device or its ioBroker adapter
-- `estimated` – configured/derived value
-- `unknown` – no usable measurement
+## Admin-Oberfläche
 
-The adapter continues to operate when optional meters are absent.
+Die Konfiguration ist in eigene Bereiche gegliedert:
 
-## Battery control abstraction
+1. Zentrale Einstellungen
+2. PV & Batteriespeicher
+3. Wetter & Prognosen
+4. Wärmepumpe
+5. Heizstab
+6. Klimaanlagen
+7. Prioritäten & Regelung
+8. Diagnose
 
-Internally Energy Pilot reasons in power. A mapped system may accept:
+Optionale Werte sind direkt als **Optional** gekennzeichnet. Abhängige Felder werden nur angezeigt, wenn die zugehörige Funktion aktiviert bzw. ausgewählt ist. Datenpunktfelder verwenden die volle Seitenbreite; große Gerätetabellen sind bewusst breit und horizontal scrollbar statt Spalten zusammenzuquetschen.
 
-- W (power)
-- A (current; battery voltage state can be supplied)
-- %
-- boolean enable/disable
+## dasWetter
 
-This keeps the core independent of KOSTAL/BYD or any other vendor combination.
+Bei Auswahl von `Automatisch aus ioBroker dasWetter` genügt beispielsweise:
 
-## Important commissioning note
+```text
+daswetter.0
+```
 
-Different vendor states may interpret charge/discharge limits differently. V0.1 intentionally does not embed vendor-specific register semantics. Confirm the meaning, unit, limits and fail-safe behavior of every writable state in the source adapter/device documentation before disabling dry-run mode.
+Energy Pilot sucht darunter die Stundenwerte aus `ForecastHourly` und bildet automatisch Tageskennzahlen. Es ist keine manuelle Zuordnung von 24 einzelnen Stundenwerten notwendig.
 
-## Changelog
+## Prioritäten
 
-### 0.1.0 (2026-08-24)
+Kleinere Prioritätswerte bedeuten eine höhere Priorität. Energy Pilot verteilt die verfügbare Überschussleistung in dieser Reihenfolge an flexible Funktionen. Die normale interne Regelung von Wärmepumpe, Batterie, Klimaanlage und Wechselrichter bleibt unangetastet.
 
-- Initial Energy Pilot release.
-- Manufacturer-independent device mapping and capability-oriented control foundation.
-- PV/grid, storage, forecast/weather, consumption forecast, heat pump, heating rod, HVAC, priorities and diagnostics.
+## Installation über GitHub
 
-## License
+Repository:
+
+```text
+ioBroker.energypilot
+```
+
+Nach der Installation sollte die erste Inbetriebnahme im **Testbetrieb** erfolgen. Erst nach Prüfung von Vorzeichen, Einheiten und Diagnosewerten sollte das Schreiben von Sollwerten freigegeben werden.
+
+## Entwicklungsstand
+
+Energy Pilot befindet sich in aktiver Entwicklung. Für produktive Installationen sollten Schreibzugriffe zunächst sorgfältig mit den jeweiligen Geräteschnittstellen getestet werden.
+
+## Lizenz
 
 MIT

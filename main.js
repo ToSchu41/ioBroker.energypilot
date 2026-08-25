@@ -12,6 +12,8 @@ class EnergyPilot extends utils.Adapter {
         this.thermal = new Map();
         this.today = { date: this.dayKey(), energyWh: 0, tempSum: 0, tempSamples: 0, lastTs: Date.now() };
         this.history = [];
+        this.unitCache = new Map();
+        this.weatherObjectCache = { ts: 0, ids: [] };
     }
 
     dayKey(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
@@ -36,6 +38,7 @@ class EnergyPilot extends utils.Adapter {
             "control.availableSurplusW": ["number","value.power","Available flexible surplus",0,"W"],
             "forecast.pvTodayKWh": ["number","value.energy","PV forecast today",0,"kWh"],
             "forecast.pvRemainingKWh": ["number","value.energy","PV forecast remaining",0,"kWh"],
+            "forecast.pvTomorrowKWh": ["number","value.energy","PV forecast tomorrow",0,"kWh"],
             "forecast.consumptionTodayKWh": ["number","value.energy","Forecast consumption today",0,"kWh"],
             "forecast.expectedBalanceKWh": ["number","value.energy","Expected PV minus consumption",0,"kWh"],
             "diagnostics.gridPowerW": ["number","value.power","Grid power (+ import / - export)",0,"W"],
@@ -44,6 +47,12 @@ class EnergyPilot extends utils.Adapter {
             "diagnostics.batteryPowerW": ["number","value.power","Battery power",0,"W"],
             "diagnostics.batterySoc": ["number","value.battery","Battery SOC",0,"%"],
             "diagnostics.weatherTempC": ["number","value.temperature","Forecast/current outdoor temperature",0,"°C"],
+            "diagnostics.weatherMinTempC": ["number","value.temperature","Forecast minimum temperature",0,"°C"],
+            "diagnostics.weatherMaxTempC": ["number","value.temperature","Forecast maximum temperature",0,"°C"],
+            "diagnostics.weatherCloudsPct": ["number","value","Forecast average clouds",0,"%"],
+            "diagnostics.weatherHumidityPct": ["number","value.humidity","Forecast average humidity",0,"%"],
+            "diagnostics.weatherWind": ["number","value.speed","Forecast average wind speed",0,""] ,
+            "diagnostics.inputUnits": ["string","json","Detected source units","{}",""] ,
             "diagnostics.dataValid": ["boolean","indicator","Input data valid",false],
             "diagnostics.lastDecision": ["string","text","Last decision",""],
             "diagnostics.lastCycle": ["string","date","Last control cycle",""],
@@ -58,15 +67,35 @@ class EnergyPilot extends utils.Adapter {
         await this.setStateAsync("info.connection", true, true);
     }
 
-    async getNum(id, factor=1) {
-        if (!id) return {valid:false,value:0,age:Infinity};
+    async sourceUnit(id) {
+        if (!id) return "";
+        if (this.unitCache.has(id)) return this.unitCache.get(id);
+        try {
+            const o = await this.getForeignObjectAsync(id);
+            const unit = String(o?.common?.unit || "").trim();
+            this.unitCache.set(id, unit);
+            return unit;
+        } catch { return ""; }
+    }
+
+    unitFactor(unit, quantity) {
+        const u=String(unit||"").trim().replace(/\s/g,"").toLowerCase();
+        if(quantity==="power") { if(u==="kw") return 1000; if(u==="mw") return 1000000; return 1; }
+        if(quantity==="energyKWh") { if(u==="wh") return 0.001; if(u==="mwh") return 1000; return 1; }
+        return 1;
+    }
+
+    async getNum(id, factor=1, quantity=null) {
+        if (!id) return {valid:false,value:0,age:Infinity,unit:""};
         try {
             const s = await this.getForeignStateAsync(id);
-            if (!s || s.val === null || s.val === undefined || Number.isNaN(Number(s.val))) return {valid:false,value:0,age:Infinity};
+            if (!s || s.val === null || s.val === undefined || Number.isNaN(Number(s.val))) return {valid:false,value:0,age:Infinity,unit:""};
             const age = Date.now() - (s.ts || 0);
             const valid = age <= Math.max(5000, Number(this.config.staleSec||30)*1000);
-            return {valid,value:Number(s.val)*factor,age};
-        } catch (e) { this.log.debug(`Cannot read ${id}: ${e.message}`); return {valid:false,value:0,age:Infinity}; }
+            const unit=await this.sourceUnit(id);
+            const normalized=Number(s.val)*factor*(quantity?this.unitFactor(unit,quantity):1);
+            return {valid,value:normalized,age,unit};
+        } catch (e) { this.log.debug(`Cannot read ${id}: ${e.message}`); return {valid:false,value:0,age:Infinity,unit:""}; }
     }
     async getAny(id) { if (!id) return {valid:false,value:null}; try { const s=await this.getForeignStateAsync(id); return {valid:!!s && Date.now()-(s.ts||0)<=Number(this.config.staleSec||30)*1000,value:s?.val}; } catch { return {valid:false,value:null}; } }
     async write(id, value, reason) {
@@ -81,17 +110,48 @@ class EnergyPilot extends utils.Adapter {
         if (!this.config.batteryEnabled) return {enabled:false,power:0,soc:null,quality:"disabled"};
         const soc=await this.getNum(this.config.batterySocState);
         let p={valid:false,value:0}; let quality="unknown";
-        if (this.config.batteryMeasurementMode === "meter") { p=await this.getNum(this.config.batteryMeterPowerState); quality=p.valid?"measured":"unknown"; }
-        else if (this.config.batteryMeasurementMode === "device") { p=await this.getNum(this.config.batteryPowerState); quality=p.valid?"deviceReported":"unknown"; }
+        if (this.config.batteryMeasurementMode === "meter") { p=await this.getNum(this.config.batteryMeterPowerState,1,"power"); quality=p.valid?"measured":"unknown"; }
+        else if (this.config.batteryMeasurementMode === "device") { p=await this.getNum(this.config.batteryPowerState,1,"power"); quality=p.valid?"deviceReported":"unknown"; }
         else if (this.config.batteryMeasurementMode === "estimated") quality="estimated";
         const rawPower=p.value||0; const power=this.config.batteryPowerSign==="dischargePositive" ? -rawPower : rawPower;
         return {enabled:true,power,soc:soc.valid?soc.value:null,socValid:soc.valid,quality};
     }
 
+    async readDasWetterForecast() {
+        const base=String(this.config.dasWetterBasePath||"daswetter.0").replace(/\.$/,"");
+        const location=String(this.config.dasWetterLocation||"Location_1").replace(/^\.+|\.+$/g,"");
+        const root=`${base}.ForecastHourly.${location}.`;
+        try {
+            let ids=this.weatherObjectCache.ids;
+            if(!ids.length || Date.now()-this.weatherObjectCache.ts>10*60*1000){
+                const objs=await this.getForeignObjectsAsync(`${root}*`,"state");
+                ids=Object.keys(objs||{});
+                this.weatherObjectCache={ts:Date.now(),ids};
+            }
+            const suffixes={temperature:".temperature_value",clouds:".clouds_value",humidity:".humidity_value",wind:".wind_speed_value",rainProbability:".rain_probability_value"};
+            const out={temperature:[],clouds:[],humidity:[],wind:[],rainProbability:[]};
+            for(const [key,suffix] of Object.entries(suffixes)){
+                const matching=ids.filter(id=>id.endsWith(suffix));
+                for(const id of matching){ const x=await this.getNum(id); if(x.valid && Number.isFinite(x.value)) out[key].push(x.value); }
+            }
+            const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+            return {valid:out.temperature.length>0,tempAvg:avg(out.temperature),tempMin:out.temperature.length?Math.min(...out.temperature):null,tempMax:out.temperature.length?Math.max(...out.temperature):null,clouds:avg(out.clouds),humidity:avg(out.humidity),wind:avg(out.wind),rainProbability:avg(out.rainProbability),samples:out.temperature.length};
+        } catch(e){ this.log.debug(`dasWetter forecast read failed: ${e.message}`); return {valid:false}; }
+    }
+
     async forecast() {
-        const today=await this.getNum(this.config.pvForecastTodayState), rem=await this.getNum(this.config.pvForecastRemainingState), next3=await this.getNum(this.config.pvForecastNext3hState);
-        const tempNow=await this.getNum(this.config.weatherTempNowState), tempAvg=await this.getNum(this.config.weatherTempAvgState), tempMax=await this.getNum(this.config.weatherTempMaxState), clouds=await this.getNum(this.config.weatherCloudState);
-        const avgT=tempAvg.valid?tempAvg.value:(tempNow.valid?tempNow.value:null);
+        const today=await this.getNum(this.config.pvForecastTodayState,1,"energyKWh");
+        const rem=await this.getNum(this.config.pvForecastRemainingState,1,"energyKWh");
+        const tomorrow=await this.getNum(this.config.pvForecastTomorrowState,1,"energyKWh");
+        const next3=await this.getNum(this.config.pvForecastNext3hState,1,"energyKWh");
+        let wx={valid:false,tempAvg:null,tempMin:null,tempMax:null,clouds:null,humidity:null,wind:null,rainProbability:null,samples:0};
+        if(this.config.weatherSourceMode==="daswetter") wx=await this.readDasWetterForecast();
+        else if(this.config.weatherSourceMode!=="none"){
+            const tempNow=await this.getNum(this.config.weatherTempNowState), tempAvg=await this.getNum(this.config.weatherTempAvgState), tempMax=await this.getNum(this.config.weatherTempMaxState), clouds=await this.getNum(this.config.weatherCloudState);
+            const t=tempAvg.valid?tempAvg.value:(tempNow.valid?tempNow.value:null);
+            wx={valid:t!==null,tempAvg:t,tempMin:t,tempMax:tempMax.valid?tempMax.value:t,clouds:clouds.valid?clouds.value:null,humidity:null,wind:null,rainProbability:null,samples:t!==null?1:0};
+        }
+        const avgT=wx.tempAvg;
         let baseline=Number(this.config.baseDailyConsumptionKWh||0);
         let learnedForWeather=false;
         if (this.config.learningEnabled && this.history.length) {
@@ -103,11 +163,14 @@ class EnergyPilot extends utils.Adapter {
         let consumption=baseline;
         if (avgT !== null && !learnedForWeather) {
             if (avgT < Number(this.config.heatingBalanceTempC||15)) consumption += (Number(this.config.heatingBalanceTempC||15)-avgT)*Number(this.config.heatingKWhPerK||0);
-            const mx=tempMax.valid?tempMax.value:avgT;
+            const mx=wx.tempMax!==null?wx.tempMax:avgT;
             if (mx > Number(this.config.coolingBalanceTempC||24)) consumption += (mx-Number(this.config.coolingBalanceTempC||24))*Number(this.config.coolingKWhPerK||0);
+            // Small weather correction: wind tends to raise heating demand; cloud cover lowers passive solar gains.
+            if(avgT < Number(this.config.heatingBalanceTempC||15) && Number.isFinite(wx.wind)) consumption += Math.max(0,wx.wind-10)*0.03;
+            if(avgT < Number(this.config.heatingBalanceTempC||15) && Number.isFinite(wx.clouds)) consumption += Math.max(0,wx.clouds-50)*0.005;
         }
         const pvToday=today.valid?today.value:0, pvRem=rem.valid?rem.value:0;
-        return {pvToday,pvRemaining:pvRem,pvNext3h:next3.valid?next3.value:0,temp:avgT,clouds:clouds.valid?clouds.value:null,consumption,balance:pvToday-consumption};
+        return {pvToday,pvRemaining:pvRem,pvTomorrow:tomorrow.valid?tomorrow.value:0,pvNext3h:next3.valid?next3.value:0,temp:avgT,tempMin:wx.tempMin,tempMax:wx.tempMax,clouds:wx.clouds,humidity:wx.humidity,wind:wx.wind,rainProbability:wx.rainProbability,weatherSamples:wx.samples,consumption,balance:pvToday-consumption};
     }
 
     async updateLearning(housePowerW, tempC) {
@@ -198,14 +261,14 @@ class EnergyPilot extends utils.Adapter {
         const out={battery:{powerW:Math.round(b.power||0),soc:b.soc,quality:b.quality}};
         if(this.config.heatPumpEnabled){
             let x={valid:false,value:0},q="unknown";
-            if(this.config.heatPumpMeasurementMode==="meter"){x=await this.getNum(this.config.heatPumpMeterPowerState);q=x.valid?"measured":"unknown";}
-            else if(this.config.heatPumpMeasurementMode==="device"){x=await this.getNum(this.config.heatPumpPowerState);q=x.valid?"deviceReported":"unknown";}
+            if(this.config.heatPumpMeasurementMode==="meter"){x=await this.getNum(this.config.heatPumpMeterPowerState,1,"power");q=x.valid?"measured":"unknown";}
+            else if(this.config.heatPumpMeasurementMode==="device"){x=await this.getNum(this.config.heatPumpPowerState,1,"power");q=x.valid?"deviceReported":"unknown";}
             else if(this.config.heatPumpMeasurementMode==="estimated")q="estimated";
             out.heatPump={powerW:Math.round(x.value||0),quality:q};
         }
         if(this.config.heaterEnabled){
             let x={valid:false,value:0},q="unknown";
-            if(this.config.heaterMeasurementMode==="meter"){x=await this.getNum(this.config.heaterMeterPowerState);q=x.valid?"measured":"unknown";}
+            if(this.config.heaterMeasurementMode==="meter"){x=await this.getNum(this.config.heaterMeterPowerState,1,"power");q=x.valid?"measured":"unknown";}
             else if(this.config.heaterMeasurementMode==="estimated"){const st=await this.getAny(this.config.heaterEnableSetState);x={valid:st.valid,value:st.value?Number(this.config.heaterPowerW||0):0};q="estimated";}
             out.heater={powerW:Math.round(x.value||0),quality:q};
         }
@@ -213,8 +276,8 @@ class EnergyPilot extends utils.Adapter {
         const rows=Array.isArray(this.config.climates)?this.config.climates:[];
         for(const c of rows){
             let x={valid:false,value:0},q="unknown";
-            if(c.measurementMode==="meter"){x=await this.getNum(c.meterPowerState);q=x.valid?"measured":"unknown";}
-            else if(c.measurementMode==="device"){x=await this.getNum(c.powerState);q=x.valid?"deviceReported":"unknown";}
+            if(c.measurementMode==="meter"){x=await this.getNum(c.meterPowerState,1,"power");q=x.valid?"measured":"unknown";}
+            else if(c.measurementMode==="device"){x=await this.getNum(c.powerState,1,"power");q=x.valid?"deviceReported":"unknown";}
             else if(c.measurementMode==="estimated")q="estimated";
             out.climates.push({name:c.name||"Climate",powerW:Math.round(x.value||0),quality:q});
         }
@@ -223,7 +286,7 @@ class EnergyPilot extends utils.Adapter {
 
     async runCycle() {
         if(!this.config.emsEnabled){await this.setStateAsync("control.mode","disabled",true);return;}
-        const gRaw=await this.getNum(this.config.gridPowerState), pv=await this.getNum(this.config.pvPowerState), houseCfg=await this.getNum(this.config.housePowerState), b=await this.batterySnapshot(), f=await this.forecast();
+        const gRaw=await this.getNum(this.config.gridPowerState,1,"power"), pv=await this.getNum(this.config.pvPowerState,1,"power"), houseCfg=await this.getNum(this.config.housePowerState,1,"power"), b=await this.batterySnapshot(), f=await this.forecast();
         const grid=gRaw.valid?this.normalizeGrid(gRaw.value):0;
         let house=houseCfg.valid?houseCfg.value:0;
         if(!houseCfg.valid && gRaw.valid && pv.valid) house=Math.max(0,pv.value+grid-(b.power||0));
@@ -247,9 +310,9 @@ class EnergyPilot extends utils.Adapter {
         const deviceMeasurements=await this.collectDeviceMeasurements(b);
         await this.setStateAsync("control.mode",dataValid?"automatic":"input-error",true);
         if(!dataValid) await this.setStateAsync("control.availableSurplusW",0,true);
-        await this.setStateAsync("forecast.pvTodayKWh",f.pvToday,true); await this.setStateAsync("forecast.pvRemainingKWh",f.pvRemaining,true); await this.setStateAsync("forecast.consumptionTodayKWh",Math.round(f.consumption*10)/10,true); await this.setStateAsync("forecast.expectedBalanceKWh",Math.round(f.balance*10)/10,true);
-        await this.setStateAsync("diagnostics.gridPowerW",Math.round(grid),true); await this.setStateAsync("diagnostics.pvPowerW",Math.round(pv.value||0),true); await this.setStateAsync("diagnostics.housePowerW",Math.round(house),true); await this.setStateAsync("diagnostics.batteryPowerW",Math.round(b.power||0),true); if(b.soc!==null)await this.setStateAsync("diagnostics.batterySoc",b.soc,true); if(f.temp!==null)await this.setStateAsync("diagnostics.weatherTempC",f.temp,true);
-        await this.setStateAsync("diagnostics.dataValid",dataValid,true); await this.setStateAsync("diagnostics.measurementQuality",JSON.stringify({grid:gRaw.valid?"measured":"unknown",pv:pv.valid?"deviceReported":"unknown",battery:b.quality,house:houseCfg.valid?"measured":"derived"}),true); await this.setStateAsync("diagnostics.deviceMeasurements",JSON.stringify(deviceMeasurements),true); await this.setStateAsync("diagnostics.activeLoads",JSON.stringify(activeLoads.sort((a,b)=>a.priority-b.priority)),true); await this.setStateAsync("diagnostics.lastDecision",decisions.join(" | ").slice(0,10000),true); await this.setStateAsync("diagnostics.lastCycle",new Date().toISOString(),true);
+        await this.setStateAsync("forecast.pvTodayKWh",f.pvToday,true); await this.setStateAsync("forecast.pvRemainingKWh",f.pvRemaining,true); await this.setStateAsync("forecast.pvTomorrowKWh",f.pvTomorrow||0,true); await this.setStateAsync("forecast.consumptionTodayKWh",Math.round(f.consumption*10)/10,true); await this.setStateAsync("forecast.expectedBalanceKWh",Math.round(f.balance*10)/10,true);
+        await this.setStateAsync("diagnostics.gridPowerW",Math.round(grid),true); await this.setStateAsync("diagnostics.pvPowerW",Math.round(pv.value||0),true); await this.setStateAsync("diagnostics.housePowerW",Math.round(house),true); await this.setStateAsync("diagnostics.batteryPowerW",Math.round(b.power||0),true); if(b.soc!==null)await this.setStateAsync("diagnostics.batterySoc",b.soc,true); if(f.temp!==null)await this.setStateAsync("diagnostics.weatherTempC",f.temp,true); if(f.tempMin!==null)await this.setStateAsync("diagnostics.weatherMinTempC",f.tempMin,true); if(f.tempMax!==null)await this.setStateAsync("diagnostics.weatherMaxTempC",f.tempMax,true); if(f.clouds!==null)await this.setStateAsync("diagnostics.weatherCloudsPct",f.clouds,true); if(f.humidity!==null)await this.setStateAsync("diagnostics.weatherHumidityPct",f.humidity,true); if(f.wind!==null)await this.setStateAsync("diagnostics.weatherWind",f.wind,true);
+        const inputUnits={grid:await this.sourceUnit(this.config.gridPowerState),pv:await this.sourceUnit(this.config.pvPowerState),house:await this.sourceUnit(this.config.housePowerState),battery:await this.sourceUnit(this.config.batteryMeasurementMode==="meter"?this.config.batteryMeterPowerState:this.config.batteryPowerState),pvForecastToday:await this.sourceUnit(this.config.pvForecastTodayState),pvForecastRemaining:await this.sourceUnit(this.config.pvForecastRemainingState)}; await this.setStateAsync("diagnostics.inputUnits",JSON.stringify(inputUnits),true); await this.setStateAsync("diagnostics.dataValid",dataValid,true); await this.setStateAsync("diagnostics.measurementQuality",JSON.stringify({grid:gRaw.valid?"measured":"unknown",pv:pv.valid?"deviceReported":"unknown",battery:b.quality,house:houseCfg.valid?"measured":"derived"}),true); await this.setStateAsync("diagnostics.deviceMeasurements",JSON.stringify(deviceMeasurements),true); await this.setStateAsync("diagnostics.activeLoads",JSON.stringify(activeLoads.sort((a,b)=>a.priority-b.priority)),true); await this.setStateAsync("diagnostics.lastDecision",decisions.join(" | ").slice(0,10000),true); await this.setStateAsync("diagnostics.lastCycle",new Date().toISOString(),true);
     }
 
     onMessage(obj){ if(obj?.command==="getStatus" && obj.callback) this.sendTo(obj.from,obj.command,{ok:true,dryRun:!!this.config.dryRun},obj.callback); }

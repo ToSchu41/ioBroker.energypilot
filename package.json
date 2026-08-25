@@ -1,6 +1,6 @@
 {
   "name": "iobroker.energypilot",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Manufacturer-independent predictive energy management for ioBroker",
   "author": "Tobias Schu",
   "license": "MIT",

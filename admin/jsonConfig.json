@@ -6,50 +6,90 @@
       "type": "panel",
       "label": "Zentrale Einstellungen",
       "items": {
-        "_h1": {
+        "_h0": {
           "type": "header",
-          "text": "Energiemanagement",
+          "text": "Betrieb",
           "size": 4,
           "sm": 12
+        },
+        "_i0": {
+          "type": "staticText",
+          "text": "Hier werden nur anlagenweite Einstellungen vorgenommen. Gerätespezifische Werte befinden sich in den jeweiligen Gerätebereichen.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
         },
         "emsEnabled": {
           "type": "checkbox",
           "label": "Energy Pilot aktivieren",
-          "sm": 6
+          "sm": 12,
+          "md": 6,
+          "lg": 4
         },
         "dryRun": {
           "type": "checkbox",
-          "label": "Testbetrieb (nur berechnen, keine Stellwerte schreiben)",
-          "sm": 6
+          "label": "Testbetrieb – nur berechnen, keine Stellwerte schreiben",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "help": "Für die Erstinbetriebnahme empfohlen."
         },
         "cycleSec": {
           "type": "number",
-          "label": "Regelintervall (s)",
-          "sm": 6,
+          "label": "Regelintervall",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 5,
+          "help": "Zeit zwischen zwei Regelzyklen.",
           "min": 1,
-          "max": 60
+          "max": 60,
+          "unit": "s"
         },
         "staleSec": {
           "type": "number",
-          "label": "Timeout für Datenpunkte (s)",
-          "sm": 6,
+          "label": "Timeout für Eingangsdaten",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 30,
+          "help": "Messwerte, die älter sind, gelten als ungültig.",
           "min": 5,
-          "max": 600
+          "max": 600,
+          "unit": "s"
+        },
+        "_d1": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h1": {
+          "type": "header",
+          "text": "Netzregelung",
+          "size": 4,
+          "sm": 12
         },
         "targetGridW": {
           "type": "number",
-          "label": "Zielwert Netzleistung (W)",
-          "sm": 6,
-          "default": 0
+          "label": "Zielwert Netzleistung",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 0,
+          "help": "Positiv bedeutet intern Netzbezug, negativ Einspeisung.",
+          "unit": "W"
         },
         "gridReserveW": {
           "type": "number",
-          "label": "Netzreserve / Totband (W)",
-          "sm": 6,
+          "label": "Netzreserve / Totband",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 200,
-          "min": 0
+          "help": "Kleine Schwankungen innerhalb dieses Bereichs lösen keine zusätzliche Lastzuteilung aus.",
+          "min": 0,
+          "unit": "W"
         },
         "allocationStrategy": {
           "type": "select",
@@ -64,7 +104,15 @@
               "value": "minimum"
             }
           ],
-          "sm": 6
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": "priority"
+        },
+        "_d2": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
         },
         "_h2": {
           "type": "header",
@@ -72,79 +120,130 @@
           "size": 4,
           "sm": 12
         },
+        "_i2": {
+          "type": "staticText",
+          "text": "Diese Werte bilden den Startpunkt für die Verbrauchsprognose. Wetterdaten und – sofern aktiviert – gelernte historische Verbräuche verfeinern die Prognose.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
+        },
         "baseDailyConsumptionKWh": {
           "type": "number",
-          "label": "Grundverbrauch pro Tag (kWh)",
-          "sm": 6,
+          "label": "Grundverbrauch pro Tag",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 8,
-          "min": 0
+          "help": "Basisverbrauch ohne temperaturabhängigen Heiz- oder Kühlbedarf.",
+          "min": 0,
+          "unit": "kWh"
         },
         "heatingBalanceTempC": {
           "type": "number",
-          "label": "Heizgrenztemperatur (°C)",
-          "sm": 6,
-          "default": 15
+          "label": "Heizgrenztemperatur",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 15,
+          "unit": "°C"
         },
         "heatingKWhPerK": {
           "type": "number",
-          "label": "Heizbedarf (kWh je K/Tag)",
-          "sm": 6,
+          "label": "Zusätzlicher Heizbedarf je Kelvin und Tag",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 1.2,
+          "help": "Nur verwendet, solange kein ausreichend passendes Lernprofil vorhanden ist.",
           "min": 0,
-          "step": 0.1
+          "step": 0.1,
+          "unit": "kWh/K"
         },
         "coolingBalanceTempC": {
           "type": "number",
-          "label": "Kühlgrenztemperatur (°C)",
-          "sm": 6,
-          "default": 24
+          "label": "Kühlgrenztemperatur",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 24,
+          "unit": "°C"
         },
         "coolingKWhPerK": {
           "type": "number",
-          "label": "Kühlbedarf (kWh je K/Tag)",
-          "sm": 6,
+          "label": "Zusätzlicher Kühlbedarf je Kelvin und Tag",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 0.7,
+          "help": "Nur verwendet, solange kein ausreichend passendes Lernprofil vorhanden ist.",
           "min": 0,
-          "step": 0.1
+          "step": 0.1,
+          "unit": "kWh/K"
         },
         "learningEnabled": {
           "type": "checkbox",
-          "label": "Gelernten historischen Grundverbrauch verwenden",
-          "sm": 6
+          "label": "Historischen Verbrauch lernen und verwenden",
+          "sm": 12,
+          "md": 6,
+          "lg": 4
         },
         "historyDays": {
           "type": "number",
-          "label": "Lernzeitraum (Tage)",
-          "sm": 6,
+          "label": "Lernzeitraum",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 30,
+          "help": "Optional – Anzahl der zurückliegenden Tage für Vergleichswerte.",
           "min": 7,
-          "max": 365
+          "max": 365,
+          "unit": "Tage"
         },
-        "_i": {
+        "_d3": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_note": {
           "type": "staticText",
-          "text": "Sicherheits- und Geräteschutzfunktionen verbleiben in den angesteuerten Geräten. Energy Pilot gibt ausschließlich Sollwerte und Freigaben zur Energieoptimierung vor.",
-          "sm": 12
+          "text": "Sicherheits- und Geräteschutzfunktionen verbleiben vollständig in den angesteuerten Geräten. Energy Pilot optimiert ausschließlich Sollwerte und Freigaben.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
         }
       }
     },
     "pvStorage": {
       "type": "panel",
-      "label": "PV & Speicher",
+      "label": "PV & Batteriespeicher",
       "items": {
-        "_hg": {
+        "_h0": {
           "type": "header",
-          "text": "Netzanschluss / Energiemeter",
+          "text": "Netzanschluss / zentraler Energiemeter",
           "size": 4,
           "sm": 12
         },
+        "_i0": {
+          "type": "staticText",
+          "text": "Pflichtwerte zuerst: Für die Grundregelung werden Netzleistung und PV-Leistung benötigt. Alle als „Optional“ gekennzeichneten Felder können leer bleiben.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
+        },
         "gridPowerState": {
           "type": "objectId",
-          "label": "Datenpunkt Wirkleistung Netzanschluss",
-          "sm": 12
+          "label": "Wirkleistung am Netzanschluss – erforderlich",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Erwartet wird eine Leistung. Energy Pilot liest die Einheit des gewählten Objekts automatisch und rechnet W/kW/MW intern in W um."
         },
         "gridSign": {
           "type": "select",
-          "label": "Vorzeichen Netzleistung",
+          "label": "Vorzeichen der Netzleistung",
           "options": [
             {
               "label": "Positiv = Netzbezug",
@@ -155,14 +254,25 @@
               "value": "exportPositive"
             }
           ],
-          "sm": 6
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": "importPositive"
         },
         "housePowerState": {
           "type": "objectId",
-          "label": "Datenpunkt Hausverbrauch (optional)",
-          "sm": 12
+          "label": "Hausverbrauch – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – falls kein eigener Hausverbrauchsdatenpunkt vorhanden ist, wird er aus PV, Netz und Batterie abgeleitet. Erwartet wird eine Leistung. Energy Pilot liest die Einheit des gewählten Objekts automatisch und rechnet W/kW/MW intern in W um."
         },
-        "_hpv": {
+        "_d1": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h1": {
           "type": "header",
           "text": "PV-Wechselrichter",
           "size": 4,
@@ -170,47 +280,72 @@
         },
         "pvPowerState": {
           "type": "objectId",
-          "label": "Datenpunkt aktuelle PV-Leistung",
-          "sm": 12
+          "label": "Aktuelle PV-Leistung – erforderlich",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Erwartet wird eine Leistung. Energy Pilot liest die Einheit des gewählten Objekts automatisch und rechnet W/kW/MW intern in W um."
         },
-        "_hb": {
+        "_d2": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h2": {
           "type": "header",
-          "text": "Batteriespeicher",
+          "text": "Batteriespeicher – Grunddaten",
           "size": 4,
           "sm": 12
         },
         "batteryEnabled": {
           "type": "checkbox",
-          "label": "Batteriespeicher aktiv",
-          "sm": 6
+          "label": "Batteriespeicher verwenden",
+          "sm": 12,
+          "md": 6,
+          "lg": 4
         },
         "batteryName": {
           "type": "text",
-          "label": "Name",
-          "sm": 6
+          "label": "Bezeichnung",
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "default": "Batteriespeicher",
+          "hidden": "!data.batteryEnabled"
         },
         "batteryPriority": {
           "type": "number",
           "label": "Ladepriorität",
-          "sm": 6,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 30,
+          "help": "Kleinere Zahl = höhere Priorität.",
           "min": 1,
-          "max": 100
+          "max": 100,
+          "hidden": "!data.batteryEnabled"
         },
         "batterySocState": {
           "type": "objectId",
-          "label": "Ladezustand / SOC (%)",
-          "sm": 12
+          "label": "Ladezustand / SOC – erforderlich bei aktivem Speicher",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Erwartete Einheit: %.",
+          "hidden": "!data.batteryEnabled"
         },
         "batteryPowerState": {
           "type": "objectId",
-          "label": "Vom System gemeldete Batterieleistung (optional)",
-          "sm": 12
+          "label": "Vom Batteriesystem gemeldete Leistung – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Erwartet wird eine Leistung. Energy Pilot liest die Einheit des gewählten Objekts automatisch und rechnet W/kW/MW intern in W um.",
+          "hidden": "!data.batteryEnabled || data.batteryMeasurementMode !== 'device'"
         },
         "batteryPowerSign": {
           "type": "select",
           "label": "Vorzeichen der Batterieleistung",
-          "sm": 6,
           "options": [
             {
               "label": "Positiv = Laden",
@@ -220,14 +355,30 @@
               "label": "Positiv = Entladen",
               "value": "dischargePositive"
             }
-          ]
+          ],
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": "chargePositive",
+          "hidden": "!data.batteryEnabled || (data.batteryMeasurementMode !== 'device' && data.batteryMeasurementMode !== 'meter')"
+        },
+        "_d3": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h3": {
+          "type": "header",
+          "text": "Batterie – Energiemessung",
+          "size": 4,
+          "sm": 12
         },
         "batteryMeasurementMode": {
           "type": "select",
-          "label": "Quelle der Energiemessung",
+          "label": "Quelle der Leistungsmessung",
           "options": [
             {
-              "label": "Keine",
+              "label": "Keine Messung",
               "value": "none"
             },
             {
@@ -239,23 +390,32 @@
               "value": "meter"
             },
             {
-              "label": "Geschätzt",
+              "label": "Geschätzter Wert",
               "value": "estimated"
             }
           ],
-          "sm": 6
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": "device",
+          "help": "Optional – externe Energiemeter können jederzeit später ergänzt werden.",
+          "hidden": "!data.batteryEnabled"
         },
         "batteryMeterPowerState": {
           "type": "objectId",
-          "label": "Wirkleistung externer Batterie-Energiemeter (optional)",
-          "sm": 12
+          "label": "Externer Batterie-Energiemeter – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Erwartet wird eine Leistung. Energy Pilot liest die Einheit des gewählten Objekts automatisch und rechnet W/kW/MW intern in W um.",
+          "hidden": "!data.batteryEnabled || data.batteryMeasurementMode !== 'meter'"
         },
-        "batteryVoltageState": {
-          "type": "objectId",
-          "label": "Batteriespannung (optional; hilfreich bei Stromvorgabe)",
-          "sm": 12
+        "_d4": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
         },
-        "_hbc": {
+        "_h4": {
           "type": "header",
           "text": "Batteriesteuerung",
           "size": 4,
@@ -263,23 +423,27 @@
         },
         "batteryChargeControlEnabled": {
           "type": "checkbox",
-          "label": "Externe Batteriesteuerung aktivieren",
-          "sm": 6
+          "label": "Externe Lade-/Entladesteuerung verwenden",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "help": "Nur aktivieren, wenn der Wechselrichter bzw. das Batteriesystem externe Vorgaben unterstützt.",
+          "hidden": "!data.batteryEnabled"
         },
         "batteryChargeControlType": {
           "type": "select",
-          "label": "Steuerwert",
+          "label": "Art des Sollwertes",
           "options": [
             {
-              "label": "Leistung (W)",
+              "label": "Leistung",
               "value": "power"
             },
             {
-              "label": "Strom (A)",
+              "label": "Strom",
               "value": "current"
             },
             {
-              "label": "Prozent (%)",
+              "label": "Prozent",
               "value": "percent"
             },
             {
@@ -287,68 +451,129 @@
               "value": "boolean"
             }
           ],
-          "sm": 6
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": "power",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
         },
         "batteryChargeSetState": {
           "type": "objectId",
-          "label": "Datenpunkt Ladegrenze / Ladesollwert",
-          "sm": 12
+          "label": "Datenpunkt Ladebegrenzung / Ladesollwert – erforderlich",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Die erwartete Einheit hängt von der gewählten Steuerart ab.",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
         },
         "batteryDischargeSetState": {
           "type": "objectId",
-          "label": "Datenpunkt Entladegrenze / Entladesollwert",
-          "sm": 12
+          "label": "Datenpunkt Entladebegrenzung / Entladesollwert – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – kann leer bleiben, wenn das System nur die Ladebegrenzung unterstützt.",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+        },
+        "batteryVoltageState": {
+          "type": "objectId",
+          "label": "Batteriespannung – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – nur für eine Umrechnung von Leistung in Strom sinnvoll bzw. notwendig.",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryChargeControlType !== 'current'"
         },
         "batteryMaxChargeValue": {
           "type": "number",
           "label": "Maximaler Lade-Sollwert",
-          "sm": 6,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 5000,
-          "min": 0
+          "help": "Einheit passend zur gewählten Steuerart.",
+          "min": 0,
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
         },
         "batteryMaxDischargeValue": {
           "type": "number",
           "label": "Maximaler Entlade-Sollwert",
-          "sm": 6,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 5000,
-          "min": 0
+          "help": "Optional – nur relevant, wenn ein Entladesollwert geschrieben werden kann.",
+          "min": 0,
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+        },
+        "_d5": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h5": {
+          "type": "header",
+          "text": "SOC-Grenzen & Prognoseoptimierung",
+          "size": 4,
+          "sm": 12
         },
         "batteryMinSoc": {
           "type": "number",
-          "label": "Minimaler SOC (%)",
-          "sm": 6,
+          "label": "Minimaler SOC",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 10,
           "min": 0,
-          "max": 100
+          "max": 100,
+          "unit": "%",
+          "hidden": "!data.batteryEnabled"
         },
         "batteryReserveSoc": {
           "type": "number",
-          "label": "Reserve-SOC (%)",
-          "sm": 6,
+          "label": "Reserve-SOC",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 20,
+          "help": "Unterhalb dieser Reserve wird Energy Pilot keine zusätzliche Entladung anfordern.",
           "min": 0,
-          "max": 100
+          "max": 100,
+          "unit": "%",
+          "hidden": "!data.batteryEnabled"
         },
         "batteryTargetSoc": {
           "type": "number",
-          "label": "Ziel-SOC (%)",
-          "sm": 6,
+          "label": "Ziel-SOC",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 80,
+          "help": "Ziel für die prognosebasierte Ladeplanung.",
           "min": 0,
-          "max": 100
+          "max": 100,
+          "unit": "%",
+          "hidden": "!data.batteryEnabled"
         },
         "batteryMaxSoc": {
           "type": "number",
-          "label": "Maximaler SOC (%)",
-          "sm": 6,
+          "label": "Maximaler SOC",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 100,
           "min": 0,
-          "max": 100
+          "max": 100,
+          "unit": "%",
+          "hidden": "!data.batteryEnabled"
         },
         "batteryForecastControl": {
           "type": "checkbox",
-          "label": "Prognose für Batterieladung verwenden",
-          "sm": 6
+          "label": "PV- und Verbrauchsprognose bei der Batterieladung berücksichtigen",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "hidden": "!data.batteryEnabled"
         }
       }
     },
@@ -356,62 +581,186 @@
       "type": "panel",
       "label": "Wetter & Prognosen",
       "items": {
-        "_hp": {
+        "_h0": {
           "type": "header",
-          "text": "PV-Prognose aus ioBroker-Datenpunkten",
+          "text": "PV-Prognose",
           "size": 4,
           "sm": 12
+        },
+        "_i0": {
+          "type": "staticText",
+          "text": "Energy Pilot verwendet vorhandene ioBroker-Prognosedaten. Die Einheiten der verknüpften Objekte werden automatisch erkannt und normalisiert.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
         },
         "forecastEnabled": {
           "type": "checkbox",
           "label": "Prognosen verwenden",
-          "sm": 6
+          "sm": 12,
+          "md": 6,
+          "lg": 4
         },
         "pvForecastTodayState": {
           "type": "objectId",
-          "label": "PV-Prognose heute (kWh)",
-          "sm": 12
+          "label": "PV-Energie heute – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – empfohlen. Erwartet wird eine Energiemenge. Energy Pilot liest die Einheit automatisch und rechnet Wh/kWh/MWh intern in kWh um.",
+          "hidden": "!data.forecastEnabled"
         },
         "pvForecastRemainingState": {
           "type": "objectId",
-          "label": "PV-Prognose Rest des Tages (kWh)",
-          "sm": 12
+          "label": "PV-Energie Rest des Tages – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – besonders wichtig für die Speicherplanung. Erwartet wird eine Energiemenge. Energy Pilot liest die Einheit automatisch und rechnet Wh/kWh/MWh intern in kWh um.",
+          "hidden": "!data.forecastEnabled"
+        },
+        "pvForecastTomorrowState": {
+          "type": "objectId",
+          "label": "PV-Energie morgen – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – ermöglicht eine vorausschauende Entlade-/Reserveplanung. Erwartet wird eine Energiemenge. Energy Pilot liest die Einheit automatisch und rechnet Wh/kWh/MWh intern in kWh um.",
+          "hidden": "!data.forecastEnabled"
+        },
+        "pvForecastPowerNowState": {
+          "type": "objectId",
+          "label": "PV-Leistungsprognose aktuell – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional. Erwartet wird eine Leistung. Energy Pilot liest die Einheit des gewählten Objekts automatisch und rechnet W/kW/MW intern in W um.",
+          "hidden": "!data.forecastEnabled"
+        },
+        "pvForecastInstalledState": {
+          "type": "objectId",
+          "label": "Installierte PV-Leistung – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – erwartet W/kW/kWp; dient vorerst der Diagnose und Plausibilisierung.",
+          "hidden": "!data.forecastEnabled"
         },
         "pvForecastNext3hState": {
           "type": "objectId",
-          "label": "PV-Prognose nächste 3 Stunden (kWh)",
-          "sm": 12
+          "label": "PV-Energie nächste 3 Stunden – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – nur verwenden, wenn der Forecast-Adapter diesen Summenwert direkt bereitstellt. Erwartet wird eine Energiemenge. Energy Pilot liest die Einheit automatisch und rechnet Wh/kWh/MWh intern in kWh um.",
+          "hidden": "!data.forecastEnabled"
         },
-        "_hw": {
+        "_d1": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h1": {
           "type": "header",
-          "text": "Wetterprognose aus ioBroker-Datenpunkten",
+          "text": "Wetterprognose",
           "size": 4,
           "sm": 12
         },
+        "_i1": {
+          "type": "staticText",
+          "text": "Für ioBroker „dasWetter“ kann Energy Pilot den kompletten 24-Stunden-Forecast des aktuellen Tages selbst auslesen. Laut offizieller Adapterstruktur stehen dafür stündliche Forecastdaten bereit.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
+        },
+        "weatherSourceMode": {
+          "type": "select",
+          "label": "Wetterquelle",
+          "options": [
+            {
+              "label": "Automatisch aus ioBroker dasWetter",
+              "value": "daswetter"
+            },
+            {
+              "label": "Manuelle Datenpunktzuordnung",
+              "value": "manual"
+            },
+            {
+              "label": "Keine Wetterprognose",
+              "value": "none"
+            }
+          ],
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": "daswetter",
+          "hidden": "!data.forecastEnabled"
+        },
+        "dasWetterBasePath": {
+          "type": "text",
+          "label": "Basispfad der dasWetter-Instanz",
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "default": "daswetter.0",
+          "help": "Nur der Instanzpfad ist nötig. Energy Pilot sucht darunter ForecastHourly automatisch.",
+          "hidden": "!data.forecastEnabled || data.weatherSourceMode !== 'daswetter'"
+        },
+        "dasWetterLocation": {
+          "type": "text",
+          "label": "Standortkanal",
+          "default": "Location_1",
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "help": "In der Regel Location_1. Nur ändern, wenn die dasWetter-Instanz einen anderen Standortkanal verwendet.",
+          "hidden": "!data.forecastEnabled || data.weatherSourceMode !== 'daswetter'"
+        },
+        "_dasNote": {
+          "type": "staticText",
+          "text": "Automatisch ausgewertet werden Temperatur, Bewölkung, Luftfeuchtigkeit, Wind und Niederschlagswahrscheinlichkeit über die verfügbaren Stunden des Tages.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
+        },
         "weatherTempNowState": {
           "type": "objectId",
-          "label": "Aktuelle Außentemperatur (°C)",
-          "sm": 12
+          "label": "Aktuelle Außentemperatur – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Nur bei manueller Wetterquelle. Erwartete Einheit: °C.",
+          "hidden": "!data.forecastEnabled || data.weatherSourceMode !== 'manual'"
         },
         "weatherTempAvgState": {
           "type": "objectId",
-          "label": "Prognostizierte Durchschnittstemperatur (°C)",
-          "sm": 12
+          "label": "Durchschnittstemperatur – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Nur bei manueller Wetterquelle. Erwartete Einheit: °C.",
+          "hidden": "!data.forecastEnabled || data.weatherSourceMode !== 'manual'"
         },
         "weatherTempMaxState": {
           "type": "objectId",
-          "label": "Prognostizierte Höchsttemperatur (°C)",
-          "sm": 12
+          "label": "Höchsttemperatur – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Nur bei manueller Wetterquelle. Erwartete Einheit: °C.",
+          "hidden": "!data.forecastEnabled || data.weatherSourceMode !== 'manual'"
         },
         "weatherCloudState": {
           "type": "objectId",
-          "label": "Prognostizierte Bewölkung (%)",
-          "sm": 12
-        },
-        "_ii": {
-          "type": "staticText",
-          "text": "Energy Pilot ruft keine Wetter-API selbst auf. Jeder vorhandene Adapter (z. B. dasWetter) kann genutzt werden, indem seine Datenpunkte hier zugeordnet werden.",
-          "sm": 12
+          "label": "Bewölkung – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Nur bei manueller Wetterquelle. Erwartete Einheit: %.",
+          "hidden": "!data.forecastEnabled || data.weatherSourceMode !== 'manual'"
         }
       }
     },
@@ -419,54 +768,77 @@
       "type": "panel",
       "label": "Wärmepumpe",
       "items": {
-        "_ha": {
+        "_h0": {
           "type": "header",
           "text": "Allgemein",
           "size": 4,
           "sm": 12
         },
+        "_i0": {
+          "type": "staticText",
+          "text": "Der normale Heizbetrieb verbleibt vollständig in der Wärmepumpe. Energy Pilot steuert nur flexible PV-Boost-Funktionen.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
+        },
         "heatPumpEnabled": {
           "type": "checkbox",
-          "label": "Wärmepumpe aktiv",
-          "sm": 6
+          "label": "Wärmepumpe verwenden",
+          "sm": 12,
+          "md": 6,
+          "lg": 4
         },
         "heatPumpName": {
           "type": "text",
-          "label": "Name",
-          "sm": 6
+          "label": "Bezeichnung",
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "default": "Wärmepumpe",
+          "hidden": "!data.heatPumpEnabled"
         },
         "heatPumpPriority": {
           "type": "number",
           "label": "PV-Boost-Priorität",
-          "sm": 6,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 20,
+          "help": "Kleinere Zahl = höhere Priorität.",
           "min": 1,
-          "max": 100
+          "max": 100,
+          "hidden": "!data.heatPumpEnabled"
         },
         "heatPumpBoostPowerW": {
           "type": "number",
-          "label": "Erwartete zusätzliche Leistung bei PV-Boost (W)",
-          "sm": 6,
+          "label": "Erwartete zusätzliche Leistung bei PV-Boost",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 2000,
+          "help": "Wird für die Zuteilung der verfügbaren Überschussleistung benötigt.",
           "min": 0,
-          "default": 2000
+          "unit": "W",
+          "hidden": "!data.heatPumpEnabled"
         },
-        "_hm": {
+        "_d1": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h1": {
           "type": "header",
-          "text": "Messwerte",
+          "text": "Energiemessung & optionale Messwerte",
           "size": 4,
-          "sm": 12
-        },
-        "heatPumpPowerState": {
-          "type": "objectId",
-          "label": "Vom Gerät gemeldete Wirkleistung (optional)",
           "sm": 12
         },
         "heatPumpMeasurementMode": {
           "type": "select",
-          "label": "Quelle der Energiemessung",
+          "label": "Quelle der Leistungsmessung",
           "options": [
             {
-              "label": "Keine",
+              "label": "Keine Messung",
               "value": "none"
             },
             {
@@ -478,33 +850,68 @@
               "value": "meter"
             },
             {
-              "label": "Geschätzt",
+              "label": "Geschätzter Wert",
               "value": "estimated"
             }
           ],
-          "sm": 6
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": "device",
+          "help": "Optional – ein externer Energiemeter kann später ergänzt werden.",
+          "hidden": "!data.heatPumpEnabled"
+        },
+        "heatPumpPowerState": {
+          "type": "objectId",
+          "label": "Vom Gerät gemeldete Leistung – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Erwartet wird eine Leistung. Energy Pilot liest die Einheit des gewählten Objekts automatisch und rechnet W/kW/MW intern in W um.",
+          "hidden": "!data.heatPumpEnabled || data.heatPumpMeasurementMode !== 'device'"
         },
         "heatPumpMeterPowerState": {
           "type": "objectId",
-          "label": "Wirkleistung externer Energiemeter (optional)",
-          "sm": 12
+          "label": "Externer Energiemeter – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Erwartet wird eine Leistung. Energy Pilot liest die Einheit des gewählten Objekts automatisch und rechnet W/kW/MW intern in W um.",
+          "hidden": "!data.heatPumpEnabled || data.heatPumpMeasurementMode !== 'meter'"
         },
         "heatPumpModeState": {
           "type": "objectId",
-          "label": "Betriebsmodus (optional)",
-          "sm": 12
+          "label": "Betriebsmodus – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – nur für Diagnose und spätere Optimierungen.",
+          "hidden": "!data.heatPumpEnabled"
         },
         "heatPumpCompressorState": {
           "type": "objectId",
-          "label": "Verdichter aktiv (optional)",
-          "sm": 12
+          "label": "Verdichter aktiv – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – nur für Diagnose und spätere Laufzeitoptimierung.",
+          "hidden": "!data.heatPumpEnabled"
         },
         "heatPumpHotWaterTempState": {
           "type": "objectId",
-          "label": "Warmwassertemperatur (optional)",
-          "sm": 12
+          "label": "Warmwassertemperatur – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – erwartet °C.",
+          "hidden": "!data.heatPumpEnabled"
         },
-        "_hc": {
+        "_d2": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h2": {
           "type": "header",
           "text": "PV-Boost-Steuerung",
           "size": 4,
@@ -523,74 +930,133 @@
               "value": "temperature"
             }
           ],
-          "sm": 6
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": "boolean",
+          "hidden": "!data.heatPumpEnabled"
         },
         "heatPumpBoostSetState": {
           "type": "objectId",
-          "label": "Datenpunkt PV-Boost / SG Ready (Boolean)",
-          "sm": 12
+          "label": "PV-Boost / SG-Ready-Datenpunkt – erforderlich",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Erwartet einen schreibbaren Boolean-Datenpunkt.",
+          "hidden": "!data.heatPumpEnabled || data.heatPumpControlType !== 'boolean'"
         },
         "heatPumpHeatingTargetSetState": {
           "type": "objectId",
-          "label": "Datenpunkt Heizungs-Solltemperatur",
-          "sm": 12
+          "label": "Heizungs-Solltemperatur – erforderlich",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Erwartet einen schreibbaren Temperatur-Sollwert.",
+          "hidden": "!data.heatPumpEnabled || data.heatPumpControlType !== 'temperature'"
         },
         "heatPumpHotWaterTargetSetState": {
           "type": "objectId",
-          "label": "Datenpunkt Warmwasser-Solltemperatur",
-          "sm": 12
+          "label": "Warmwasser-Solltemperatur – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – kann leer bleiben, wenn nur der Heizsollwert beeinflusst werden soll.",
+          "hidden": "!data.heatPumpEnabled || data.heatPumpControlType !== 'temperature'"
         },
         "heatPumpNormalHeatingTarget": {
           "type": "number",
-          "label": "Normaler Heiz-Sollwert (°C)",
-          "sm": 6,
-          "default": 21
+          "label": "Normaler Heiz-Sollwert",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 21,
+          "unit": "°C",
+          "hidden": "!data.heatPumpEnabled || data.heatPumpControlType !== 'temperature'"
         },
         "heatPumpBoostHeatingTarget": {
           "type": "number",
-          "label": "Heiz-Sollwert bei PV-Boost (°C)",
-          "sm": 6,
-          "default": 22
+          "label": "Heiz-Sollwert bei PV-Boost",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 22,
+          "unit": "°C",
+          "hidden": "!data.heatPumpEnabled || data.heatPumpControlType !== 'temperature'"
         },
         "heatPumpNormalHotWaterTarget": {
           "type": "number",
-          "label": "Normaler Warmwasser-Sollwert (°C)",
-          "sm": 6,
-          "default": 48
+          "label": "Normaler Warmwasser-Sollwert – Optional",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 48,
+          "unit": "°C",
+          "hidden": "!data.heatPumpEnabled || data.heatPumpControlType !== 'temperature'"
         },
         "heatPumpBoostHotWaterTarget": {
           "type": "number",
-          "label": "Warmwasser-Sollwert bei PV-Boost (°C)",
-          "sm": 6,
-          "default": 53
+          "label": "Warmwasser-Sollwert bei PV-Boost – Optional",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 53,
+          "unit": "°C",
+          "hidden": "!data.heatPumpEnabled || data.heatPumpControlType !== 'temperature'"
+        },
+        "_d3": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h3": {
+          "type": "header",
+          "text": "Schaltschwellen & Zeiten",
+          "size": 4,
+          "sm": 12
         },
         "heatPumpBoostSurplusW": {
           "type": "number",
-          "label": "PV-Boost EIN ab Überschuss (W)",
-          "sm": 6,
+          "label": "PV-Boost EIN ab Überschuss",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 1500,
-          "min": 0
+          "min": 0,
+          "unit": "W",
+          "hidden": "!data.heatPumpEnabled"
         },
         "heatPumpBoostOffW": {
           "type": "number",
-          "label": "PV-Boost AUS unter Überschuss (W)",
-          "sm": 6,
+          "label": "PV-Boost AUS unter Überschuss",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 500,
-          "min": 0
+          "min": 0,
+          "unit": "W",
+          "hidden": "!data.heatPumpEnabled"
         },
         "heatPumpOnDelaySec": {
           "type": "number",
-          "label": "Einschaltverzögerung (s)",
-          "sm": 6,
+          "label": "Einschaltverzögerung",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 300,
-          "min": 0
+          "min": 0,
+          "unit": "s",
+          "hidden": "!data.heatPumpEnabled"
         },
         "heatPumpOffDelaySec": {
           "type": "number",
-          "label": "Ausschaltverzögerung (s)",
-          "sm": 6,
+          "label": "Ausschaltverzögerung",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 600,
-          "min": 0
+          "min": 0,
+          "unit": "s",
+          "hidden": "!data.heatPumpEnabled"
         }
       }
     },
@@ -598,43 +1064,76 @@
       "type": "panel",
       "label": "Heizstab",
       "items": {
-        "_hh": {
+        "_h0": {
           "type": "header",
-          "text": "Heizstab als separater flexibler Verbraucher",
+          "text": "Allgemein",
           "size": 4,
           "sm": 12
         },
+        "_i0": {
+          "type": "staticText",
+          "text": "Der Heizstab wird bewusst als eigener flexibler Verbraucher priorisiert und nicht mit dem normalen Wärmepumpenbedarf vermischt.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
+        },
         "heaterEnabled": {
           "type": "checkbox",
-          "label": "Heizstab aktiv",
-          "sm": 6
+          "label": "Heizstab verwenden",
+          "sm": 12,
+          "md": 6,
+          "lg": 4
         },
         "heaterName": {
           "type": "text",
-          "label": "Name",
-          "sm": 6
+          "label": "Bezeichnung",
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "default": "Heizstab",
+          "hidden": "!data.heaterEnabled"
         },
         "heaterPriority": {
           "type": "number",
           "label": "Priorität",
-          "sm": 6,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 80,
+          "help": "Kleinere Zahl = höhere Priorität.",
           "min": 1,
-          "max": 100
+          "max": 100,
+          "hidden": "!data.heaterEnabled"
         },
         "heaterPowerW": {
           "type": "number",
-          "label": "Nennleistung (W)",
-          "sm": 6,
+          "label": "Nennleistung",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 3000,
-          "min": 0
+          "min": 0,
+          "unit": "W",
+          "hidden": "!data.heaterEnabled"
+        },
+        "_d1": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h1": {
+          "type": "header",
+          "text": "Energiemessung",
+          "size": 4,
+          "sm": 12
         },
         "heaterMeasurementMode": {
           "type": "select",
-          "label": "Quelle der Energiemessung",
+          "label": "Quelle der Leistungsmessung",
           "options": [
             {
-              "label": "Keine",
+              "label": "Keine Messung",
               "value": "none"
             },
             {
@@ -642,56 +1141,100 @@
               "value": "meter"
             },
             {
-              "label": "Geschätzt",
+              "label": "Geschätzter Wert",
               "value": "estimated"
             }
           ],
-          "sm": 6
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": "none",
+          "help": "Optional – ein externer Energiemeter kann später ergänzt werden.",
+          "hidden": "!data.heaterEnabled"
         },
         "heaterMeterPowerState": {
           "type": "objectId",
-          "label": "Wirkleistung externer Energiemeter (optional)",
+          "label": "Externer Energiemeter – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Erwartet wird eine Leistung. Energy Pilot liest die Einheit des gewählten Objekts automatisch und rechnet W/kW/MW intern in W um.",
+          "hidden": "!data.heaterEnabled || data.heaterMeasurementMode !== 'meter'"
+        },
+        "_d2": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h2": {
+          "type": "header",
+          "text": "Steuerung",
+          "size": 4,
           "sm": 12
         },
         "heaterEnableSetState": {
           "type": "objectId",
-          "label": "Datenpunkt Freigabe",
-          "sm": 12
+          "label": "Freigabe-Datenpunkt – erforderlich",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Erwartet einen schreibbaren Boolean-Datenpunkt.",
+          "hidden": "!data.heaterEnabled"
         },
         "heaterSurplusOnW": {
           "type": "number",
-          "label": "EIN ab Überschuss (W)",
-          "sm": 6,
+          "label": "EIN ab Überschuss",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 3500,
-          "min": 0
+          "min": 0,
+          "unit": "W",
+          "hidden": "!data.heaterEnabled"
         },
         "heaterSurplusOffW": {
           "type": "number",
-          "label": "AUS unter Überschuss (W)",
-          "sm": 6,
+          "label": "AUS unter Überschuss",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 1000,
-          "min": 0
+          "min": 0,
+          "unit": "W",
+          "hidden": "!data.heaterEnabled"
         },
         "heaterOnDelaySec": {
           "type": "number",
-          "label": "Einschaltverzögerung (s)",
-          "sm": 6,
+          "label": "Einschaltverzögerung",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 300,
-          "min": 0
+          "min": 0,
+          "unit": "s",
+          "hidden": "!data.heaterEnabled"
         },
         "heaterOffDelaySec": {
           "type": "number",
-          "label": "Ausschaltverzögerung (s)",
-          "sm": 6,
+          "label": "Ausschaltverzögerung",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 300,
-          "min": 0
+          "min": 0,
+          "unit": "s",
+          "hidden": "!data.heaterEnabled"
         },
         "heaterMaxRunMin": {
           "type": "number",
-          "label": "Maximale durchgehende Laufzeit (min)",
-          "sm": 6,
+          "label": "Maximale durchgehende Laufzeit",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 60,
-          "min": 1
+          "min": 1,
+          "unit": "min",
+          "hidden": "!data.heaterEnabled"
         }
       }
     },
@@ -699,67 +1242,72 @@
       "type": "panel",
       "label": "Klimaanlagen",
       "items": {
-        "_h": {
+        "_h0": {
           "type": "header",
           "text": "Klimaanlagen",
           "size": 4,
           "sm": 12
         },
-        "_i": {
+        "_i0": {
           "type": "staticText",
-          "text": "Beliebig viele Geräte hinzufügen. Jedes Gerät kann geräteeigene Messwerte, einen externen Energiemeter, Schätzwerte oder keine Energiemessung verwenden.",
-          "sm": 12
+          "text": "Beliebig viele Klimageräte können eingebunden werden. Optionale Felder sind direkt in der Spaltenüberschrift gekennzeichnet. Die Tabelle ist bewusst breit ausgelegt; auf kleineren Ansichten kann horizontal gescrollt werden.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
+        },
+        "_i1": {
+          "type": "staticText",
+          "text": "Leistungsdaten können vom Gerät, von einem externen Energiemeter oder als Schätzwert kommen. W und kW werden zur Laufzeit automatisch in W normalisiert.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
         },
         "climates": {
           "type": "table",
-          "label": "Klimageräte",
+          "label": "Konfigurierte Klimageräte",
           "sm": 12,
           "items": [
             {
               "type": "checkbox",
               "attr": "enabled",
-              "title": "Active",
-              "width": "70px",
+              "title": "Aktiv",
+              "width": "90px",
               "default": true
             },
             {
               "type": "text",
               "attr": "name",
-              "title": "Name",
-              "width": "160px",
-              "default": "Climate"
+              "title": "Bezeichnung",
+              "width": "190px",
+              "default": "Klimaanlage"
             },
             {
               "type": "number",
               "attr": "priority",
-              "title": "Priority",
-              "width": "90px",
+              "title": "Priorität",
+              "width": "110px",
               "default": 40
             },
             {
               "type": "number",
               "attr": "expectedPowerW",
-              "title": "Expected flexible W",
-              "width": "130px",
+              "title": "Erwartete flexible Leistung (W)",
+              "width": "180px",
               "default": 800
             },
             {
               "type": "objectId",
               "attr": "roomTempState",
-              "title": "Room temperature",
-              "width": "220px"
-            },
-            {
-              "type": "objectId",
-              "attr": "powerState",
-              "title": "Device power",
-              "width": "220px"
+              "title": "Raumtemperatur – Optional",
+              "width": "320px"
             },
             {
               "type": "select",
               "attr": "measurementMode",
-              "title": "Measurement",
-              "width": "150px",
+              "title": "Energiemessung",
+              "width": "190px",
               "default": "device",
               "options": [
                 {
@@ -767,7 +1315,7 @@
                   "value": "none"
                 },
                 {
-                  "label": "Gerät",
+                  "label": "Vom Gerät",
                   "value": "device"
                 },
                 {
@@ -782,90 +1330,96 @@
             },
             {
               "type": "objectId",
+              "attr": "powerState",
+              "title": "Geräteleistung – Optional (W/kW)",
+              "width": "330px"
+            },
+            {
+              "type": "objectId",
               "attr": "meterPowerState",
-              "title": "External meter",
-              "width": "220px"
+              "title": "Externer Energiemeter – Optional (W/kW)",
+              "width": "340px"
             },
             {
               "type": "objectId",
               "attr": "modeSetState",
-              "title": "Mode set state",
-              "width": "220px"
+              "title": "Betriebsmodus Sollwert – Optional",
+              "width": "330px"
             },
             {
               "type": "objectId",
               "attr": "targetSetState",
-              "title": "Target temperature state",
-              "width": "220px"
+              "title": "Solltemperatur – erforderlich für PV-Optimierung",
+              "width": "350px"
             },
             {
               "type": "text",
               "attr": "coolModeValue",
-              "title": "Cooling mode value",
-              "width": "130px",
+              "title": "Wert für Kühlen",
+              "width": "150px",
               "default": "cool"
             },
             {
               "type": "text",
               "attr": "heatModeValue",
-              "title": "Heating mode value",
-              "width": "130px",
+              "title": "Wert für Heizen",
+              "width": "150px",
               "default": "heat"
             },
             {
               "type": "number",
               "attr": "normalCoolTarget",
-              "title": "Normal cool °C",
-              "width": "120px",
+              "title": "Normal Kühlen (°C)",
+              "width": "150px",
               "default": 24.5
             },
             {
               "type": "number",
               "attr": "pvCoolTarget",
-              "title": "PV cool °C",
-              "width": "110px",
+              "title": "PV-Kühlen (°C)",
+              "width": "150px",
               "default": 23.5
             },
             {
               "type": "number",
               "attr": "normalHeatTarget",
-              "title": "Normal heat °C",
-              "width": "120px",
+              "title": "Normal Heizen (°C)",
+              "width": "150px",
               "default": 21
             },
             {
               "type": "number",
               "attr": "pvHeatTarget",
-              "title": "PV heat °C",
-              "width": "110px",
+              "title": "PV-Heizen (°C)",
+              "width": "150px",
               "default": 22
             },
             {
               "type": "number",
               "attr": "surplusOnW",
-              "title": "ON surplus W",
-              "width": "120px",
+              "title": "EIN ab Überschuss (W)",
+              "width": "175px",
               "default": 1000
             },
             {
               "type": "number",
               "attr": "surplusOffW",
-              "title": "OFF surplus W",
-              "width": "120px",
+              "title": "AUS unter Überschuss (W)",
+              "width": "185px",
               "default": 300
             },
             {
               "type": "number",
               "attr": "onDelaySec",
-              "title": "ON delay s",
-              "width": "100px",
+              "title": "Einschaltverzögerung (s)",
+              "width": "175px",
               "default": 300
             },
             {
               "type": "number",
               "attr": "offDelaySec",
-              "title": "OFF delay s",
-              "width": "100px",
+              "title": "Ausschaltverzögerung (s)",
+              "width": "180px",
               "default": 600
             }
           ],
@@ -873,10 +1427,16 @@
           "export": true,
           "import": true,
           "useCardFor": [
-            "xs",
-            "sm"
+            "xs"
           ],
-          "titleAttribute": "name"
+          "titleAttribute": "name",
+          "showFirstAddOnTop": true,
+          "showSecondAddAt": 4,
+          "style": {
+            "overflowX": "auto",
+            "maxWidth": "100%"
+          },
+          "compact": false
         }
       }
     },
@@ -884,16 +1444,19 @@
       "type": "panel",
       "label": "Prioritäten & Regelung",
       "items": {
-        "_h": {
+        "_h0": {
           "type": "header",
           "text": "Prioritätskonzept",
           "size": 4,
           "sm": 12
         },
-        "_i1": {
+        "_i0": {
           "type": "staticText",
-          "text": "Kleinere Werte bedeuten eine höhere Priorität. Gerätespezifische Prioritäten werden im jeweiligen Gerätebereich festgelegt. Der normale Heizbedarf wird von Energy Pilot nicht blockiert; priorisiert werden nur flexible PV-Boost-Funktionen.",
-          "sm": 12
+          "text": "Kleinere Zahlen bedeuten eine höhere Priorität. Die Priorität jeder Funktion wird im zugehörigen Gerätebereich eingestellt; hier befinden sich nur die globalen Regeln.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
         },
         "allocationStrategy": {
           "type": "select",
@@ -908,19 +1471,47 @@
               "value": "minimum"
             }
           ],
-          "sm": 6
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": "priority"
         },
         "gridReserveW": {
           "type": "number",
-          "label": "Netzreserve / Totband (W)",
-          "sm": 6,
+          "label": "Netzreserve / Totband",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
           "default": 200,
-          "min": 0
+          "min": 0,
+          "unit": "W"
+        },
+        "_d1": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h1": {
+          "type": "header",
+          "text": "Hinweise zur Zuteilung",
+          "size": 4,
+          "sm": 12
+        },
+        "_i1": {
+          "type": "staticText",
+          "text": "Energy Pilot verteilt den gemessenen PV-Überschuss nacheinander an flexible Funktionen. Normaler Heizbedarf und interne Schutzfunktionen werden nicht blockiert.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
         },
         "_i2": {
           "type": "staticText",
-          "text": "V0.1 verteilt den aktuell gemessenen Überschuss nach Priorität und verwendet Hysteresen sowie Verzögerungen für thermische Verbraucher. Spätere Versionen können dies um gewichtete oder proportionale Verteilung erweitern, ohne die Gerätezuordnung zu ändern.",
-          "sm": 12
+          "text": "Eine aktive Funktion reduziert die verbleibende Überschussleistung um ihren erwarteten Bedarf. Dadurch können mehrere Verbraucher mit unterschiedlichen Prioritäten nachvollziehbar koordiniert werden.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
         }
       }
     },
@@ -928,21 +1519,46 @@
       "type": "panel",
       "label": "Diagnose",
       "items": {
-        "_h": {
+        "_h0": {
           "type": "header",
-          "text": "Live-Diagnosewerte",
+          "text": "Diagnose & Inbetriebnahme",
           "size": 4,
           "sm": 12
         },
-        "_i": {
+        "_i0": {
           "type": "staticText",
-          "text": "Nach dem Speichern und Starten der Instanz findest du unter energypilot.<Instanz>.diagnostics die Datenqualität, aktuelle Leistungsbilanz, Prognosewerte, Prioritäten, Stellbefehle und Entscheidungsgründe.",
+          "text": "Die Diagnose ist bewusst von der Konfiguration getrennt. Nach dem Start liegen die Livewerte unter energypilot.<Instanz>.diagnostics und energypilot.<Instanz>.forecast.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
+        },
+        "_i1": {
+          "type": "staticText",
+          "text": "Zusätzlich werden erkannte Eingabeeinheiten, Messqualität, Wetterkennzahlen, aktive Lasten und der Entscheidungsweg protokolliert.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
+        },
+        "_d1": {
+          "type": "divider",
+          "sm": 12,
+          "height": 24
+        },
+        "_h1": {
+          "type": "header",
+          "text": "Empfohlene Erstinbetriebnahme",
+          "size": 4,
           "sm": 12
         },
         "_dry": {
           "type": "staticText",
-          "text": "Empfehlung zur Inbetriebnahme: Testbetrieb zunächst aktiviert lassen und alle interpretierten Werte sowie Vorzeichen prüfen, bevor Schreibbefehle freigegeben werden.",
-          "sm": 12
+          "text": "Testbetrieb zunächst aktiviert lassen. Vorzeichen, erkannte Einheiten und berechnete Leistungen prüfen. Erst danach Schreibbefehle freigeben.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
         }
       }
     }

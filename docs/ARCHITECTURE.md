@@ -1,38 +1,27 @@
-# Energy Pilot architecture
+# Energy Pilot – Architektur v0.2.0
 
-Energy Pilot deliberately separates **device mapping** from **energy strategy**.
+Energy Pilot trennt die gerätespezifische Datenpunktzuordnung konsequent von der zentralen Energiemanagement-Logik.
 
-```text
-Existing ioBroker adapters / Modbus / MQTT / KNX
-                    |
-                    v
-             Device mappings
-                    |
-                    v
-         Normalized Energy Pilot model
-                    |
-        +-----------+-----------+
-        |                       |
-        v                       v
- Forecast / learning      Priority allocator
-        |                       |
-        +-----------+-----------+
-                    |
-                    v
-            Generic setpoints
-                    |
-                    v
-             Device adapters
-```
+## Ebenen
 
-## Rule
+1. **ioBroker-/Geräteadapter** stellen Mess- und Stellwerte bereit.
+2. **Energy Pilot Eingangsschicht** liest Datenpunkte, prüft Alter und Einheit und normalisiert Leistungs-/Energiewerte.
+3. **Prognoseschicht** kombiniert PV-Prognose, Wetterprognose und gelernte Verbrauchswerte.
+4. **Prioritätslogik** verteilt verfügbare flexible Leistung nach konfigurierbaren Prioritäten.
+5. **Gerätesteuerung** setzt nur die jeweils unterstützten Sollwerte/Freigaben.
 
-Safety, equipment protection and primary device control remain in the individual devices. Energy Pilot only optimizes flexible power demand and battery limits.
+## Herstellerneutralität
 
-## Measurement quality
+Es gibt keine fest verdrahtete KOSTAL-, BYD-, Wärmepumpen- oder Klimageräte-Logik. Geräte werden über frei wählbare ioBroker-Datenpunkte angebunden. Fehlende Messwerte oder Steuerfähigkeiten sind zulässig.
 
-Each device may independently use an external energy meter, a device-reported power value, an estimate, or no measurement. Missing meters do not prevent operation.
+## Einheiten
 
-## Priorities
+Quellobjekte werden über `common.unit` ausgewertet. Leistung wird intern auf W und Energie auf kWh normalisiert. Die erkannten Einheiten werden in der Diagnose ausgegeben.
 
-Lower numerical values mean higher priority. The allocator walks flexible functions in priority order and removes the expected allocated power from the currently available PV surplus before the next function is evaluated.
+## Wetter
+
+Für `ioBroker.daswetter` kann der 24-Stunden-Forecast automatisch aus `ForecastHourly.<Location>` gelesen werden. Dadurch müssen einzelne Stundenwerte nicht manuell verknüpft werden.
+
+## Sicherheit
+
+Energy Pilot ersetzt keine Schutz- oder Sicherheitsfunktion der angeschlossenen Geräte. Wechselrichter, Batterie-BMS, Wärmepumpe, Heizstabsteuerung und Klimageräte bleiben für ihre internen Grenzwerte und Schutzfunktionen verantwortlich.
