@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.3.0 (2026-08-28)
+
+- automatische `dasWetter`-Anbindung auf die reale v4-Struktur `daswetter.0.location_1.ForecastHourly.Hour_x` korrigiert
+- Standard-Standortkanal auf `location_1` geändert
+- automatische Auswertung der Tagesprognosen `ForecastDaily.Day_1` (heute) und `Day_2` (morgen) ergänzt
+- Tages-Minimum/-Maximum der Temperatur werden für Prognose und Diagnose berücksichtigt
+- Wetterdiagnose um verwendete Pfade, gefundene Stundenkanäle und Tagesdaten erweitert
+- externe Batteriesteuerung grundlegend erweitert und herstellerneutral abstrahiert
+- ein gemeinsamer bidirektionaler Batteriestellwert oder getrennte Lade-/Entladestellwerte auswählbar
+- Steuergröße kann automatisch aus `common.unit` erkannt werden (W/kW, A, %, Boolean) oder manuell vorgegeben werden
+- Vorzeichenkonvention für bidirektionale Batteriestellwerte konfigurierbar
+- maximale Lade- und Entladewerte werden als harte Grenzen vor jedem Schreibvorgang berücksichtigt
+- `common.min` und `common.max` des Stellwert-Datenpunkts werden zusätzlich berücksichtigt
+- optionale dynamische Lade-/Entladegrenzen aus Wechselrichter/BMS können eingebunden werden
+- Prozentsteuerung um optionale Referenz-Lade-/Entladeleistung erweitert
+- Stromsteuerung nutzt Batteriespannung oder einen konfigurierbaren Ersatzwert
+- optionale Freigabe und Statusüberwachung der externen Batteriesteuerung vorbereitet
+- neue Diagnose `diagnostics.batteryControl` zeigt erkannte Einheit, Steuergröße, Grenzen und ausgegebenen Sollwert
+- deutsche README und GitHub-Kurzbeschreibung auf v0.3.0 aktualisiert
+
 ## 0.2.0 (2026-08-25)
 
 - Admin-Oberfläche in allen Bereichen neu strukturiert und optisch entzerrt

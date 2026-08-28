@@ -281,6 +281,5 @@
   "Zusätzlich werden erkannte Eingabeeinheiten, Messqualität, Wetterkennzahlen, aktive Lasten und der Entscheidungsweg protokolliert.": "Zusätzlich werden erkannte Eingabeeinheiten, Messqualität, Wetterkennzahlen, aktive Lasten und der Entscheidungsweg protokolliert.",
   "Empfohlene Erstinbetriebnahme": "Empfohlene Erstinbetriebnahme",
   "Testbetrieb zunächst aktiviert lassen. Vorzeichen, erkannte Einheiten und berechnete Leistungen prüfen. Erst danach Schreibbefehle freigeben.": "Testbetrieb zunächst aktiviert lassen. Vorzeichen, erkannte Einheiten und berechnete Leistungen prüfen. Erst danach Schreibbefehle freigeben.",
-  "Standortkanal": "Standortkanal",
-  "In der Regel Location_1. Nur ändern, wenn die dasWetter-Instanz einen anderen Standortkanal verwendet.": "In der Regel Location_1. Nur ändern, wenn die dasWetter-Instanz einen anderen Standortkanal verwendet."
+  "Standortkanal": "Standortkanal"
 }

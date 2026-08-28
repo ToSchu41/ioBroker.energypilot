@@ -1,1 +1,1 @@
-Herstellerunabhängiges, vorausschauendes Energiemanagement für ioBroker mit PV, Batteriespeicher, Wärmepumpe, Heizstab, Klimaanlagen, Wetter-/PV-Prognosen und frei konfigurierbaren Prioritäten.
+Herstellerunabhängiges, vorausschauendes Energiemanagement für ioBroker mit PV, Batteriespeicher, Wärmepumpe, Heizstab, Klimaanlagen, Wetter-/PV-Prognosen, externer Batteriesteuerung und frei konfigurierbaren Prioritäten.

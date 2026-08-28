@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "energypilot",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "title": "Energy Pilot",
     "titleLang": {
       "en": "Energy Pilot",
@@ -79,11 +79,11 @@
     "batteryMeterPowerState": "",
     "batteryVoltageState": "",
     "batteryChargeControlEnabled": false,
-    "batteryChargeControlType": "power",
+    "batteryChargeControlType": "auto",
     "batteryChargeSetState": "",
     "batteryDischargeSetState": "",
-    "batteryMaxChargeValue": 5000,
-    "batteryMaxDischargeValue": 5000,
+    "batteryMaxChargeValue": 0,
+    "batteryMaxDischargeValue": 0,
     "batteryMinSoc": 10,
     "batteryReserveSoc": 20,
     "batteryTargetSoc": 80,
@@ -130,7 +130,20 @@
     "pvForecastInstalledState": "",
     "weatherSourceMode": "daswetter",
     "dasWetterBasePath": "daswetter.0",
-    "dasWetterLocation": "Location_1"
+    "dasWetterLocation": "location_1",
+    "batteryControlLayout": "single",
+    "batteryControlQuantity": "auto",
+    "batteryBidirectionalSetState": "",
+    "batteryControlSign": "chargeNegative",
+    "batteryDynamicMaxChargeState": "",
+    "batteryDynamicMaxDischargeState": "",
+    "batteryReferenceChargePowerW": 0,
+    "batteryReferenceDischargePowerW": 0,
+    "batteryFixedVoltageV": 400,
+    "batteryExternalEnableState": "",
+    "batteryExternalEnableValue": true,
+    "batteryExternalStatusState": "",
+    "batteryExternalTimeoutSec": 0
   },
   "objects": []
 }

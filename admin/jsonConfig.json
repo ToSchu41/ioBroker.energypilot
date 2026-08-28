@@ -417,9 +417,17 @@
         },
         "_h4": {
           "type": "header",
-          "text": "Batteriesteuerung",
+          "text": "Externe Batteriesteuerung",
           "size": 4,
           "sm": 12
+        },
+        "_i4": {
+          "type": "staticText",
+          "text": "Energy Pilot bleibt herstellerunabhängig. Der Sollwert kann als Leistung (W/kW), Strom (A), Prozent (%) oder Boolean vorgegeben werden. Einheit und Schreibbarkeit des verknüpften ioBroker-Objekts werden automatisch geprüft. Maximale Lade- und Entladewerte sind bei aktiver Steuerung zwingend zu begrenzen.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "12px"
+          }
         },
         "batteryChargeControlEnabled": {
           "type": "checkbox",
@@ -427,52 +435,176 @@
           "sm": 12,
           "md": 6,
           "lg": 4,
-          "help": "Nur aktivieren, wenn der Wechselrichter bzw. das Batteriesystem externe Vorgaben unterstützt.",
+          "help": "Nur aktivieren, wenn Wechselrichter bzw. Batteriesystem externe Vorgaben unterstützt.",
           "hidden": "!data.batteryEnabled"
         },
-        "batteryChargeControlType": {
+        "batteryControlLayout": {
           "type": "select",
-          "label": "Art des Sollwertes",
+          "label": "Aufbau der Stellwerte",
           "options": [
             {
-              "label": "Leistung",
+              "label": "Ein gemeinsamer bidirektionaler Sollwert",
+              "value": "single"
+            },
+            {
+              "label": "Getrennte Sollwerte für Laden und Entladen",
+              "value": "separate"
+            }
+          ],
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "default": "single",
+          "help": "Viele Hybrid-Wechselrichter verwenden einen einzelnen Sollwert mit Vorzeichen. Andere Systeme haben getrennte Lade-/Entlade-Datenpunkte.",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+        },
+        "batteryControlQuantity": {
+          "type": "select",
+          "label": "Steuergröße",
+          "options": [
+            {
+              "label": "Automatisch aus common.unit erkennen",
+              "value": "auto"
+            },
+            {
+              "label": "Leistung (W)",
               "value": "power"
             },
             {
-              "label": "Strom",
+              "label": "Strom (A)",
               "value": "current"
             },
             {
-              "label": "Prozent",
+              "label": "Prozent (%)",
               "value": "percent"
             },
             {
-              "label": "Ein/Aus",
+              "label": "Ein/Aus (Boolean)",
               "value": "boolean"
             }
           ],
           "sm": 12,
           "md": 6,
-          "lg": 4,
-          "default": "power",
+          "lg": 6,
+          "default": "auto",
+          "help": "Empfohlen: Automatisch. W/kW werden als Leistung, A als Strom und % als relative Steuerung erkannt. Falls das Quellobjekt keine eindeutige Einheit besitzt, kann die Steuergröße manuell festgelegt werden.",
           "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+        },
+        "_h4a": {
+          "type": "header",
+          "text": "Stellwert-Datenpunkte",
+          "size": 5,
+          "sm": 12,
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+        },
+        "batteryBidirectionalSetState": {
+          "type": "objectId",
+          "label": "Bidirektionaler Batterie-Sollwert – erforderlich",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Erforderlich bei einem gemeinsamen Sollwert. Energy Pilot liest common.unit sowie common.min/common.max automatisch. Beispiel: absolute DC-Leistung in W.",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryControlLayout !== 'single'"
+        },
+        "batteryControlSign": {
+          "type": "select",
+          "label": "Vorzeichen des bidirektionalen Sollwerts",
+          "options": [
+            {
+              "label": "Negativ = Laden / Positiv = Entladen",
+              "value": "chargeNegative"
+            },
+            {
+              "label": "Positiv = Laden / Negativ = Entladen",
+              "value": "chargePositive"
+            }
+          ],
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "default": "chargeNegative",
+          "help": "Die Richtung lässt sich nicht zuverlässig aus der Einheit ableiten und muss passend zum Gerät gewählt werden.",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryControlLayout !== 'single'"
         },
         "batteryChargeSetState": {
           "type": "objectId",
-          "label": "Datenpunkt Ladebegrenzung / Ladesollwert – erforderlich",
+          "label": "Lade-Sollwert – erforderlich",
           "sm": 12,
           "md": 12,
           "lg": 12,
-          "help": "Die erwartete Einheit hängt von der gewählten Steuerart ab.",
-          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+          "help": "Erforderlich bei getrennten Stellwerten. Einheit und mögliche common.min/common.max-Grenzen werden automatisch erkannt.",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryControlLayout !== 'separate'"
         },
         "batteryDischargeSetState": {
           "type": "objectId",
-          "label": "Datenpunkt Entladebegrenzung / Entladesollwert – Optional",
+          "label": "Entlade-Sollwert – Optional",
           "sm": 12,
           "md": 12,
           "lg": 12,
-          "help": "Optional – kann leer bleiben, wenn das System nur die Ladebegrenzung unterstützt.",
+          "help": "Optional – kann leer bleiben, wenn das System keine externe Entladevorgabe unterstützt.",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryControlLayout !== 'separate'"
+        },
+        "_h4b": {
+          "type": "header",
+          "text": "Harte Lade- und Entladegrenzen",
+          "size": 5,
+          "sm": 12,
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+        },
+        "_i4b": {
+          "type": "staticText",
+          "text": "Diese Grenzwerte werden vor jedem Schreibvorgang angewendet. Zusätzlich berücksichtigt Energy Pilot common.min/common.max des Stellwert-Datenpunkts und optionale dynamische Gerätegrenzen. Der kleinste zulässige Wert gewinnt.",
+          "sm": 12,
+          "style": {
+            "marginBottom": "8px"
+          },
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+        },
+        "batteryMaxChargeValue": {
+          "type": "number",
+          "label": "Maximaler Lade-Sollwert – erforderlich",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 0,
+          "help": "Erforderlich. Einheit passend zur erkannten/gewählten Steuergröße: W, A oder %. Bei 0 wird aus Sicherheitsgründen keine Ladeanforderung ausgegeben.",
+          "min": 0,
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryControlQuantity === 'boolean'"
+        },
+        "batteryMaxDischargeValue": {
+          "type": "number",
+          "label": "Maximaler Entlade-Sollwert – erforderlich bei Entladesteuerung",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 0,
+          "help": "Erforderlich, wenn Energy Pilot die Entladung steuern darf. Einheit passend zur erkannten/gewählten Steuergröße. Bei 0 wird keine Entladeanforderung ausgegeben.",
+          "min": 0,
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryControlQuantity === 'boolean'"
+        },
+        "batteryDynamicMaxChargeState": {
+          "type": "objectId",
+          "label": "Aktuell zulässige Ladegrenze des Geräts – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – falls Wechselrichter/BMS eine dynamische aktuell zulässige Ladegrenze bereitstellt. Energy Pilot verwendet immer den kleineren Wert aus dieser Grenze, common.min/common.max und der manuellen Maximalgrenze.",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryControlQuantity === 'boolean'"
+        },
+        "batteryDynamicMaxDischargeState": {
+          "type": "objectId",
+          "label": "Aktuell zulässige Entladegrenze des Geräts – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – dynamische aktuell zulässige Entladegrenze des Geräts/BMS.",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryControlQuantity === 'boolean'"
+        },
+        "_h4c": {
+          "type": "header",
+          "text": "Umrechnung & Status",
+          "size": 5,
+          "sm": 12,
           "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
         },
         "batteryVoltageState": {
@@ -481,29 +613,73 @@
           "sm": 12,
           "md": 12,
           "lg": 12,
-          "help": "Optional – nur für eine Umrechnung von Leistung in Strom sinnvoll bzw. notwendig.",
-          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryChargeControlType !== 'current'"
-        },
-        "batteryMaxChargeValue": {
-          "type": "number",
-          "label": "Maximaler Lade-Sollwert",
-          "sm": 12,
-          "md": 6,
-          "lg": 4,
-          "default": 5000,
-          "help": "Einheit passend zur gewählten Steuerart.",
-          "min": 0,
+          "help": "Optional – bei Steuerung in A zur Umrechnung von verfügbarer Leistung in Strom. Falls leer, kann eine feste Spannung verwendet werden.",
           "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
         },
-        "batteryMaxDischargeValue": {
+        "batteryFixedVoltageV": {
           "type": "number",
-          "label": "Maximaler Entlade-Sollwert",
+          "label": "Feste Batteriespannung als Ersatzwert – Optional",
           "sm": 12,
           "md": 6,
           "lg": 4,
-          "default": 5000,
-          "help": "Optional – nur relevant, wenn ein Entladesollwert geschrieben werden kann.",
+          "default": 400,
+          "help": "Optional – nur für Stromsteuerung relevant, wenn kein gültiger Spannungsdatenpunkt vorliegt.",
+          "min": 1,
+          "unit": "V",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+        },
+        "batteryReferenceChargePowerW": {
+          "type": "number",
+          "label": "Referenz-Ladeleistung für Prozentsteuerung – Optional",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 0,
+          "help": "Optional – bei %-Steuerung für eine präzise Umrechnung von verfügbarer PV-Leistung in Prozent. Ohne Referenzleistung wird keine automatische %-Leistungszuteilung ausgegeben.",
           "min": 0,
+          "unit": "W",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+        },
+        "batteryReferenceDischargePowerW": {
+          "type": "number",
+          "label": "Referenz-Entladeleistung für Prozentsteuerung – Optional",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 0,
+          "help": "Optional – bei %-Steuerung zur Umrechnung von gewünschter Entladeleistung in Prozent.",
+          "min": 0,
+          "unit": "W",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+        },
+        "batteryExternalEnableState": {
+          "type": "objectId",
+          "label": "Freigabe externe Batteriesteuerung – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – schreibbarer Datenpunkt zum Aktivieren der externen Steuerung, sofern das System eine separate Freigabe benötigt.",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+        },
+        "batteryExternalStatusState": {
+          "type": "objectId",
+          "label": "Status externe Batteriesteuerung – Optional",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "help": "Optional – lesbarer Status zur Diagnose, ob das Gerät die externe Vorgabe angenommen hat.",
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
+        },
+        "batteryExternalTimeoutSec": {
+          "type": "number",
+          "label": "Erwarteter Geräte-Timeout / Fallback – Optional",
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "default": 0,
+          "help": "Optional – nur Dokumentation/Diagnose. Der geräteseitige Timeout bzw. Rückfall auf interne Regelung bleibt im Wechselrichter/Batteriesystem konfiguriert.",
+          "min": 0,
+          "unit": "s",
           "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
         },
         "_d5": {
@@ -669,7 +845,7 @@
         },
         "_i1": {
           "type": "staticText",
-          "text": "Für ioBroker „dasWetter“ kann Energy Pilot den kompletten 24-Stunden-Forecast des aktuellen Tages selbst auslesen. Laut offizieller Adapterstruktur stehen dafür stündliche Forecastdaten bereit.",
+          "text": "Bei ioBroker „dasWetter“ liest Energy Pilot die Stundenwerte automatisch aus <Instanz>.<Standort>.ForecastHourly.Hour_x. Zusätzlich werden Day_1 (heute) und Day_2 (morgen) aus ForecastDaily für Tages-Minimum/-Maximum und weitere verfügbare Kennwerte ausgewertet.",
           "sm": 12,
           "style": {
             "marginBottom": "12px"
@@ -705,22 +881,22 @@
           "md": 6,
           "lg": 6,
           "default": "daswetter.0",
-          "help": "Nur der Instanzpfad ist nötig. Energy Pilot sucht darunter ForecastHourly automatisch.",
+          "help": "Instanzpfad, z. B. daswetter.0. Energy Pilot liest darunter <Standort>.ForecastHourly und <Standort>.ForecastDaily automatisch aus.",
           "hidden": "!data.forecastEnabled || data.weatherSourceMode !== 'daswetter'"
         },
         "dasWetterLocation": {
           "type": "text",
           "label": "Standortkanal",
-          "default": "Location_1",
+          "default": "location_1",
           "sm": 12,
           "md": 6,
           "lg": 6,
-          "help": "In der Regel Location_1. Nur ändern, wenn die dasWetter-Instanz einen anderen Standortkanal verwendet.",
+          "help": "Standortkanal der dasWetter-Instanz, typischerweise location_1. Beispiel: daswetter.0.location_1.ForecastHourly.Hour_1.",
           "hidden": "!data.forecastEnabled || data.weatherSourceMode !== 'daswetter'"
         },
         "_dasNote": {
           "type": "staticText",
-          "text": "Automatisch ausgewertet werden Temperatur, Bewölkung, Luftfeuchtigkeit, Wind und Niederschlagswahrscheinlichkeit über die verfügbaren Stunden des Tages.",
+          "text": "Automatisch verarbeitet werden die verfügbaren Stundenwerte für Temperatur, Bewölkung, Luftfeuchtigkeit, Wind und Niederschlagswahrscheinlichkeit. ForecastDaily.Day_1 = heute und Day_2 = morgen ergänzen die Logik um robuste Tageskennwerte.",
           "sm": 12,
           "style": {
             "marginBottom": "12px"
