@@ -2,7 +2,7 @@
 
 **Energy Pilot** ist ein herstellerunabhängiger ioBroker-Adapter für ein lokales, vorausschauendes Energiemanagement. Er koordiniert PV-Erzeugung, Batteriespeicher, Wärmepumpe, Heizstab und Klimaanlagen anhand des aktuellen Energieflusses, frei einstellbarer Prioritäten sowie PV-, Wetter- und Verbrauchsprognosen.
 
-> **Version 0.3.0:** Entwicklungs- und Testversion. Der Testbetrieb ist standardmäßig aktiv, sodass nach der Installation zunächst keine Stellwerte an Geräte geschrieben werden.
+> **Version 0.3.1:** Entwicklungs- und Testversion. Der Testbetrieb ist standardmäßig aktiv, sodass nach der Installation zunächst keine Stellwerte an Geräte geschrieben werden.
 
 ## Grundprinzip
 

@@ -178,6 +178,28 @@ class EnergyPilot extends utils.Adapter {
         const location=String(this.config.dasWetterLocation||"location_1").replace(/^\.+|\.+$/g,"");
         const hourlyRoot=`${base}.${location}.ForecastHourly`;
         const dailyRoot=`${base}.${location}.ForecastDaily`;
+
+        // Forecast states are not live meter values. They may legitimately be several
+        // minutes or hours old, therefore the global staleSec timeout must not be used.
+        const readForecastNumber=async id=>{
+            if(!id) return {valid:false,value:null};
+            try {
+                const st=await this.getForeignStateAsync(id);
+                const value=Number(st?.val);
+                return {valid:!!st && Number.isFinite(value),value:Number.isFinite(value)?value:null,ts:st?.ts||0,raw:st?.val};
+            } catch(e) { return {valid:false,value:null,error:e.message}; }
+        };
+        const readForecastAny=async id=>{
+            if(!id) return {valid:false,value:null};
+            try { const st=await this.getForeignStateAsync(id); return {valid:!!st,value:st?.val,ts:st?.ts||0}; }
+            catch(e) { return {valid:false,value:null,error:e.message}; }
+        };
+        const findKey=(row,...names)=>{
+            const lower=Object.fromEntries(Object.entries(row||{}).map(([k,v])=>[k.toLowerCase(),v]));
+            for(const name of names){ const hit=lower[String(name).toLowerCase()]; if(hit) return hit; }
+            return "";
+        };
+
         try {
             let hourlyIds=this.weatherObjectCache.hourlyIds||[], dailyIds=this.weatherObjectCache.dailyIds||[];
             if((!hourlyIds.length && !dailyIds.length) || Date.now()-this.weatherObjectCache.ts>10*60*1000){
@@ -188,60 +210,108 @@ class EnergyPilot extends utils.Adapter {
                 hourlyIds=Object.keys(hourlyObjs||{}); dailyIds=Object.keys(dailyObjs||{});
                 this.weatherObjectCache={ts:Date.now(),hourlyIds,dailyIds};
             }
+
             const byHour={};
             for(const id of hourlyIds){
-                const m=id.match(/\.Hour_(\d+)\.([^.]*)$/);
+                const m=id.match(/\.Hour_(\d+)\.([^.]*)$/i);
                 if(!m) continue;
                 const hour=Number(m[1]), key=m[2];
                 if(!byHour[hour]) byHour[hour]={};
                 byHour[hour][key]=id;
             }
-            const out={temperature:[],clouds:[],humidity:[],wind:[],rainProbability:[]};
-            const map={temperature:"temperature",clouds:"clouds",humidity:"humidity",wind:"wind_speed",rainProbability:"rain_probability"};
-            for(const row of Object.values(byHour)){
-                for(const [dest,key] of Object.entries(map)){
-                    if(!row[key]) continue;
-                    const x=await this.getNum(row[key]);
-                    if(x.valid && Number.isFinite(x.value)) out[dest].push(x.value);
-                }
+
+            const hourly=[];
+            for(const channel of Object.keys(byHour).map(Number).sort((a,b)=>a-b)){
+                const row=byHour[channel];
+                const [temperature,clouds,humidity,windSpeed,windGust,rainProbability,rain,time,end,night]=await Promise.all([
+                    readForecastNumber(findKey(row,"temperature")),
+                    readForecastNumber(findKey(row,"clouds")),
+                    readForecastNumber(findKey(row,"humidity")),
+                    readForecastNumber(findKey(row,"wind_speed")),
+                    readForecastNumber(findKey(row,"wind_gust")),
+                    readForecastNumber(findKey(row,"rain_probability")),
+                    readForecastNumber(findKey(row,"rain")),
+                    readForecastAny(findKey(row,"time")),
+                    readForecastAny(findKey(row,"end")),
+                    readForecastAny(findKey(row,"night"))
+                ]);
+                hourly.push({
+                    channel,
+                    time:time.valid?String(time.value):"",
+                    end:end.valid?end.value:null,
+                    night:night.valid?!!night.value:null,
+                    temperature:temperature.valid?temperature.value:null,
+                    clouds:clouds.valid?clouds.value:null,
+                    humidity:humidity.valid?humidity.value:null,
+                    windSpeed:windSpeed.valid?windSpeed.value:null,
+                    windGust:windGust.valid?windGust.value:null,
+                    rainProbability:rainProbability.valid?rainProbability.value:null,
+                    rain:rain.valid?rain.value:null
+                });
             }
+
+            const nums=(key)=>hourly.map(x=>x[key]).filter(Number.isFinite);
             const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+            const temperatures=nums("temperature"), clouds=nums("clouds"), humidities=nums("humidity"), winds=nums("windSpeed"), gusts=nums("windGust"), rainProbabilities=nums("rainProbability"), rains=nums("rain");
 
             const readDaily=async day=>{
                 const prefix=`${dailyRoot}.Day_${day}.`;
-                const ids=dailyIds.filter(id=>id.startsWith(prefix));
-                const vals=[];
-                for(const id of ids){
-                    const key=id.slice(prefix.length).toLowerCase();
-                    if(!/(temp|temperature)/.test(key)) continue;
-                    const x=await this.getNum(id);
-                    if(x.valid && Number.isFinite(x.value)) vals.push({key,value:x.value});
-                }
-                const pick=kind=>{
-                    const patterns=kind==="min"?[/min.*temp/,/temp.*min/,/minimum/]:[/max.*temp/,/temp.*max/,/maximum/];
-                    const hit=vals.find(v=>patterns.some(r=>r.test(v.key)));
-                    return hit?hit.value:null;
+                const row={};
+                for(const id of dailyIds.filter(id=>id.startsWith(prefix))) row[id.slice(prefix.length)]=id;
+                const number=async (...keys)=>readForecastNumber(findKey(row,...keys));
+                const any=async (...keys)=>readForecastAny(findKey(row,...keys));
+                const [tMin,tMax,humidity,rain,rainProbability,windSpeed,windGust,sunshineDuration,symbol,symbolDescription,date]=await Promise.all([
+                    number("Temperature_Min","temperature_min"),
+                    number("Temperature_Max","temperature_max"),
+                    number("Humidity","humidity"),
+                    number("Rain","rain"),
+                    number("Rain_Probability","rain_probability"),
+                    number("Wind_Speed","wind_speed"),
+                    number("Wind_Gust","wind_gust"),
+                    number("sunshineduration","SunshineDuration","sunshine_duration"),
+                    any("symbol","Symbol"),
+                    any("symbol_description","Symbol_Description"),
+                    any("date","Date")
+                ]);
+                return {
+                    min:tMin.valid?tMin.value:null,max:tMax.valid?tMax.value:null,
+                    humidity:humidity.valid?humidity.value:null,rain:rain.valid?rain.value:null,
+                    rainProbability:rainProbability.valid?rainProbability.value:null,
+                    windSpeed:windSpeed.valid?windSpeed.value:null,windGust:windGust.valid?windGust.value:null,
+                    sunshineDuration:sunshineDuration.valid?sunshineDuration.value:null,
+                    symbol:symbol.valid?symbol.value:null,symbolDescription:symbolDescription.valid?symbolDescription.value:null,
+                    date:date.valid?date.value:null,
+                    temperatureValues:(tMin.valid?1:0)+(tMax.valid?1:0),
+                    foundStates:Object.keys(row).length
                 };
-                return {min:pick("min"),max:pick("max"),temperatureValues:vals.length};
             };
+
             const [today,tomorrow]=await Promise.all([readDaily(1),readDaily(2)]);
-            const hourlyMin=out.temperature.length?Math.min(...out.temperature):null;
-            const hourlyMax=out.temperature.length?Math.max(...out.temperature):null;
+            const hourlyMin=temperatures.length?Math.min(...temperatures):null;
+            const hourlyMax=temperatures.length?Math.max(...temperatures):null;
+            const hour1=hourly.find(x=>x.channel===1)||null;
+            const hour24=hourly.find(x=>x.channel===24)||null;
             return {
-                valid:out.temperature.length>0 || today.min!==null || today.max!==null,
-                tempAvg:avg(out.temperature),
+                valid:temperatures.length>0 || today.min!==null || today.max!==null,
+                tempAvg:avg(temperatures),
                 tempMin:today.min!==null?today.min:hourlyMin,
                 tempMax:today.max!==null?today.max:hourlyMax,
                 tomorrowMin:tomorrow.min,
                 tomorrowMax:tomorrow.max,
-                clouds:avg(out.clouds),humidity:avg(out.humidity),wind:avg(out.wind),rainProbability:avg(out.rainProbability),
-                samples:out.temperature.length,
+                clouds:avg(clouds),humidity:avg(humidities),wind:avg(winds),windGust:avg(gusts),rainProbability:avg(rainProbabilities),rain:avg(rains),
+                samples:temperatures.length,
                 hourlyRoot,dailyRoot,
                 hourChannels:Object.keys(byHour).length,
                 hourlyStates:hourlyIds.length,dailyStates:dailyIds.length,
-                todayDailyTemperatureValues:today.temperatureValues,tomorrowDailyTemperatureValues:tomorrow.temperatureValues
+                todayDailyTemperatureValues:today.temperatureValues,tomorrowDailyTemperatureValues:tomorrow.temperatureValues,
+                today,tomorrow,
+                sampleHour1:hour1?{time:hour1.time,temperature:hour1.temperature,clouds:hour1.clouds}:null,
+                sampleHour24:hour24?{time:hour24.time,temperature:hour24.temperature,clouds:hour24.clouds}:null
             };
-        } catch(e){ this.log.debug(`dasWetter forecast read failed: ${e.message}`); return {valid:false,hourlyRoot,dailyRoot,error:e.message,samples:0,hourChannels:0}; }
+        } catch(e){
+            this.log.debug(`dasWetter forecast read failed: ${e.message}`);
+            return {valid:false,hourlyRoot,dailyRoot,error:e.message,samples:0,hourChannels:0};
+        }
     }
 
     async forecast() {
@@ -487,7 +557,7 @@ class EnergyPilot extends utils.Adapter {
         await this.setStateAsync("control.mode",dataValid?"automatic":"input-error",true);
         if(!dataValid) await this.setStateAsync("control.availableSurplusW",0,true);
         await this.setStateAsync("forecast.pvTodayKWh",f.pvToday,true); await this.setStateAsync("forecast.pvRemainingKWh",f.pvRemaining,true); await this.setStateAsync("forecast.pvTomorrowKWh",f.pvTomorrow||0,true); await this.setStateAsync("forecast.consumptionTodayKWh",Math.round(f.consumption*10)/10,true); await this.setStateAsync("forecast.consumptionTomorrowKWh",Math.round((f.consumptionTomorrow||0)*10)/10,true); await this.setStateAsync("forecast.expectedBalanceKWh",Math.round(f.balance*10)/10,true); await this.setStateAsync("forecast.expectedBalanceTomorrowKWh",Math.round((f.balanceTomorrow||0)*10)/10,true);
-        await this.setStateAsync("diagnostics.gridPowerW",Math.round(grid),true); await this.setStateAsync("diagnostics.pvPowerW",Math.round(pv.value||0),true); await this.setStateAsync("diagnostics.housePowerW",Math.round(house),true); await this.setStateAsync("diagnostics.batteryPowerW",Math.round(b.power||0),true); if(b.soc!==null)await this.setStateAsync("diagnostics.batterySoc",b.soc,true); if(f.temp!==null)await this.setStateAsync("diagnostics.weatherTempC",f.temp,true); if(f.tempMin!==null)await this.setStateAsync("diagnostics.weatherMinTempC",f.tempMin,true); if(f.tempMax!==null)await this.setStateAsync("diagnostics.weatherMaxTempC",f.tempMax,true); if(f.clouds!==null)await this.setStateAsync("diagnostics.weatherCloudsPct",f.clouds,true); if(f.humidity!==null)await this.setStateAsync("diagnostics.weatherHumidityPct",f.humidity,true); if(f.wind!==null)await this.setStateAsync("diagnostics.weatherWind",f.wind,true); if(f.tomorrowMin!==null)await this.setStateAsync("diagnostics.weatherTomorrowMinTempC",f.tomorrowMin,true); if(f.tomorrowMax!==null)await this.setStateAsync("diagnostics.weatherTomorrowMaxTempC",f.tomorrowMax,true); await this.setStateAsync("diagnostics.weatherStatus",JSON.stringify({source:this.config.weatherSourceMode||"none",base:this.config.dasWetterBasePath||"",location:this.config.dasWetterLocation||"",hourlyRoot:f.weather?.hourlyRoot||"",dailyRoot:f.weather?.dailyRoot||"",hourChannels:f.weather?.hourChannels||0,hourlyStates:f.weather?.hourlyStates||0,dailyStates:f.weather?.dailyStates||0,hourlyTemperatureSamples:f.weatherSamples||0,todayDailyTemperatureValues:f.weather?.todayDailyTemperatureValues||0,tomorrowDailyTemperatureValues:f.weather?.tomorrowDailyTemperatureValues||0,valid:!!f.weather?.valid,error:f.weather?.error||""}),true);
+        await this.setStateAsync("diagnostics.gridPowerW",Math.round(grid),true); await this.setStateAsync("diagnostics.pvPowerW",Math.round(pv.value||0),true); await this.setStateAsync("diagnostics.housePowerW",Math.round(house),true); await this.setStateAsync("diagnostics.batteryPowerW",Math.round(b.power||0),true); if(b.soc!==null)await this.setStateAsync("diagnostics.batterySoc",b.soc,true); if(f.temp!==null)await this.setStateAsync("diagnostics.weatherTempC",f.temp,true); if(f.tempMin!==null)await this.setStateAsync("diagnostics.weatherMinTempC",f.tempMin,true); if(f.tempMax!==null)await this.setStateAsync("diagnostics.weatherMaxTempC",f.tempMax,true); if(f.clouds!==null)await this.setStateAsync("diagnostics.weatherCloudsPct",f.clouds,true); if(f.humidity!==null)await this.setStateAsync("diagnostics.weatherHumidityPct",f.humidity,true); if(f.wind!==null)await this.setStateAsync("diagnostics.weatherWind",f.wind,true); if(f.tomorrowMin!==null)await this.setStateAsync("diagnostics.weatherTomorrowMinTempC",f.tomorrowMin,true); if(f.tomorrowMax!==null)await this.setStateAsync("diagnostics.weatherTomorrowMaxTempC",f.tomorrowMax,true); await this.setStateAsync("diagnostics.weatherStatus",JSON.stringify({source:this.config.weatherSourceMode||"none",base:this.config.dasWetterBasePath||"",location:this.config.dasWetterLocation||"",hourlyRoot:f.weather?.hourlyRoot||"",dailyRoot:f.weather?.dailyRoot||"",hourChannels:f.weather?.hourChannels||0,hourlyStates:f.weather?.hourlyStates||0,dailyStates:f.weather?.dailyStates||0,hourlyTemperatureSamples:f.weatherSamples||0,todayDailyTemperatureValues:f.weather?.todayDailyTemperatureValues||0,tomorrowDailyTemperatureValues:f.weather?.tomorrowDailyTemperatureValues||0,sampleHour1:f.weather?.sampleHour1||null,sampleHour24:f.weather?.sampleHour24||null,today:f.weather?.today||null,tomorrow:f.weather?.tomorrow||null,valid:!!f.weather?.valid,error:f.weather?.error||""}),true);
         const inputUnits={grid:await this.sourceUnit(this.config.gridPowerState),pv:await this.sourceUnit(this.config.pvPowerState),house:await this.sourceUnit(this.config.housePowerState),battery:await this.sourceUnit(this.config.batteryMeasurementMode==="meter"?this.config.batteryMeterPowerState:this.config.batteryPowerState),pvForecastToday:await this.sourceUnit(this.config.pvForecastTodayState),pvForecastRemaining:await this.sourceUnit(this.config.pvForecastRemainingState)}; await this.setStateAsync("diagnostics.inputUnits",JSON.stringify(inputUnits),true); await this.setStateAsync("diagnostics.dataValid",dataValid,true); await this.setStateAsync("diagnostics.measurementQuality",JSON.stringify({grid:gRaw.valid?"measured":"unknown",pv:pv.valid?"deviceReported":"unknown",battery:b.quality,house:houseCfg.valid?"measured":"derived"}),true); await this.setStateAsync("diagnostics.deviceMeasurements",JSON.stringify(deviceMeasurements),true); await this.setStateAsync("diagnostics.activeLoads",JSON.stringify(activeLoads.sort((a,b)=>a.priority-b.priority)),true); await this.setStateAsync("diagnostics.lastDecision",decisions.join(" | ").slice(0,10000),true); await this.setStateAsync("diagnostics.lastCycle",new Date().toISOString(),true);
     }
 

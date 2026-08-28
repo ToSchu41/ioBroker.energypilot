@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.1 (2026-08-28)
+
+- `dasWetter`-Forecastwerte werden nicht mehr mit dem globalen Echtzeit-Timeout (`staleSec`) verworfen
+- Stundenwerte werden korrekt aus `ForecastHourly.Hour_1` bis `Hour_24` ausgelesen
+- `time` wird als maßgebliche Uhrzeit der Stundenprognose ausgewertet (`Hour_1` = 01:00, `Hour_24` = 00:00)
+- tatsächliche State-Namen `temperature`, `clouds`, `humidity`, `wind_speed`, `wind_gust`, `rain`, `rain_probability` werden verarbeitet
+- Tageswerte aus `ForecastDaily.Day_1` (heute) und `Day_2` (morgen) werden anhand der realen Namen verarbeitet
+- berücksichtigt werden `Temperature_Min`, `Temperature_Max`, `Humidity`, `Rain`, `Rain_Probability`, `Wind_Speed`, `Wind_Gust`, `sunshineduration`, `symbol`, `symbol_description` und `date`
+- Wetterdiagnose um Beispielwerte für `Hour_1`/`Hour_24` sowie vollständige Tageskennwerte für heute und morgen erweitert
+- Wetterwerte werden weiterhin als echte numerische ioBroker-States verarbeitet; die Anzeigeeinheit aus `common.unit` verändert den State-Wert nicht
+
 ## 0.3.0 (2026-08-28)
 
 - automatische `dasWetter`-Anbindung auf die reale v4-Struktur `daswetter.0.location_1.ForecastHourly.Hour_x` korrigiert
