@@ -98,16 +98,13 @@
             {
               "label": "Strikte Priorität",
               "value": "priority"
-            },
-            {
-              "label": "Mindestbedarf zuerst",
-              "value": "minimum"
             }
           ],
           "sm": 12,
           "md": 6,
           "lg": 4,
-          "default": "priority"
+          "default": "priority",
+          "help": "Aktuell wird ausschließlich strikte Priorität unterstützt. Ältere Einstellungen „minimum“ werden ebenfalls als Priorität ausgeführt."
         },
         "_d2": {
           "type": "divider",
@@ -212,6 +209,16 @@
           "style": {
             "marginBottom": "12px"
           }
+        },
+        "forecastMaxAgeHours": {
+          "type": "number",
+          "label": "Maximales Alter von Prognosedaten – Optional",
+          "min": 1,
+          "max": 168,
+          "default": 48,
+          "unit": "h",
+          "sm": 12,
+          "help": "Eigenes Zeitfenster für Wetter- und PV-Prognosen; unabhängig vom Messwert-Timeout."
         }
       }
     },
@@ -567,9 +574,9 @@
           "md": 6,
           "lg": 4,
           "default": 0,
-          "help": "Erforderlich. Einheit passend zur erkannten/gewählten Steuergröße: W, A oder %. Bei 0 wird aus Sicherheitsgründen keine Ladeanforderung ausgegeben.",
+          "help": "Erforderlich. Einheit passend zur erkannten/gewählten Steuergröße: W, A oder %. Bei 0 wird aus Sicherheitsgründen keine Ladeanforderung ausgegeben. Boolean: 0 = Richtung gesperrt, 1 = Freigabe erlaubt; physische Leistungsgrenzen bleiben im Gerät.",
           "min": 0,
-          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryControlQuantity === 'boolean'"
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
         },
         "batteryMaxDischargeValue": {
           "type": "number",
@@ -578,9 +585,9 @@
           "md": 6,
           "lg": 4,
           "default": 0,
-          "help": "Erforderlich, wenn Energy Pilot die Entladung steuern darf. Einheit passend zur erkannten/gewählten Steuergröße. Bei 0 wird keine Entladeanforderung ausgegeben.",
+          "help": "Erforderlich, wenn Energy Pilot die Entladung steuern darf. Einheit passend zur erkannten/gewählten Steuergröße. Bei 0 wird keine Entladeanforderung ausgegeben. Boolean: 0 = Richtung gesperrt, 1 = Freigabe erlaubt; physische Leistungsgrenzen bleiben im Gerät.",
           "min": 0,
-          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryControlQuantity === 'boolean'"
+          "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled"
         },
         "batteryDynamicMaxChargeState": {
           "type": "objectId",
@@ -588,7 +595,7 @@
           "sm": 12,
           "md": 12,
           "lg": 12,
-          "help": "Optional – falls Wechselrichter/BMS eine dynamische aktuell zulässige Ladegrenze bereitstellt. Energy Pilot verwendet immer den kleineren Wert aus dieser Grenze, common.min/common.max und der manuellen Maximalgrenze.",
+          "help": "Optional – falls Wechselrichter/BMS eine dynamische aktuell zulässige Ladegrenze bereitstellt. Energy Pilot verwendet immer den kleineren Wert aus dieser Grenze, common.min/common.max und der manuellen Maximalgrenze. Bei konfigurierter, aber ungültiger/veralteter Grenze wird die betroffene Richtung gesperrt. Einheit muss zur Steuergröße passen.",
           "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryControlQuantity === 'boolean'"
         },
         "batteryDynamicMaxDischargeState": {
@@ -597,7 +604,7 @@
           "sm": 12,
           "md": 12,
           "lg": 12,
-          "help": "Optional – dynamische aktuell zulässige Entladegrenze des Geräts/BMS.",
+          "help": "Optional – dynamische aktuell zulässige Entladegrenze des Geräts/BMS. Bei konfigurierter, aber ungültiger/veralteter Grenze wird die betroffene Richtung gesperrt. Einheit muss zur Steuergröße passen.",
           "hidden": "!data.batteryEnabled || !data.batteryChargeControlEnabled || data.batteryControlQuantity === 'boolean'"
         },
         "_h4c": {
@@ -1641,16 +1648,13 @@
             {
               "label": "Strikte Priorität",
               "value": "priority"
-            },
-            {
-              "label": "Mindestbedarf zuerst",
-              "value": "minimum"
             }
           ],
           "sm": 12,
           "md": 6,
           "lg": 4,
-          "default": "priority"
+          "default": "priority",
+          "help": "Aktuell wird ausschließlich strikte Priorität unterstützt. Ältere Einstellungen „minimum“ werden ebenfalls als Priorität ausgeführt."
         },
         "gridReserveW": {
           "type": "number",

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.2 (2026-11-01)
+
+- Batterie-Sollwerte korrekt in W/kW/A/mA/%/Boolean übertragen; getrennte Objektmetadaten und harte Grenzen prüfen.
+- Ungültige konfigurierte BMS-Grenzen sperren die betroffene Richtung; Schreibfehler diagnostizieren.
+- Eigenes Forecast-Alterslimit, fehlende Werte korrekt behandeln und dasWetter-Uhrzeiten sortieren.
+- Normalen Klima-Sollwert nach PV-Boost auch bei geänderter Wetterlage wiederherstellen.
+- Überlappende Regelzyklen verhindern; Prioritätsbudget, Netz-Zielwert und Nullreserve prüfen.
+- Wallbox-Capability-Vertrag vorbereiten, ohne aktive Wallbox-Regelung.
+- Verhaltenstests, CI und deutsche Versionshinweise ergänzen.
+
+Details und Migrationshinweise: [Versionshinweise 0.3.2](RELEASE_NOTES_0.3.2_DE.md).
+
 ## 0.3.1 (2026-08-28)
 
 - `dasWetter`-Forecastwerte werden nicht mehr mit dem globalen Echtzeit-Timeout (`staleSec`) verworfen

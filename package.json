@@ -1,6 +1,6 @@
 {
   "name": "iobroker.energypilot",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Herstellerunabhängiges, vorausschauendes Energiemanagement für ioBroker",
   "author": "Tobias Schu",
   "license": "MIT",
@@ -38,6 +38,6 @@
   },
   "scripts": {
     "test": "node --test test/*.test.js",
-    "check": "node --check main.js && node --test test/*.test.js"
+    "check": "node --check main.js && node --check lib/battery-control.js && node --check lib/weather-time.js && node --check lib/device-capabilities.js && node --test test/*.test.js"
   }
 }

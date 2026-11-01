@@ -92,8 +92,8 @@ class EnergyPilot extends utils.Adapter {
             const o=await this.getForeignObjectAsync(id);
             const meta={
                 unit:String(o?.common?.unit||"").trim(),
-                min:Number.isFinite(Number(o?.common?.min))?Number(o.common.min):null,
-                max:Number.isFinite(Number(o?.common?.max))?Number(o.common.max):null,
+                min:require("./lib/battery-control").numeric(o?.common?.min)?Number(o.common.min):null,
+                max:require("./lib/battery-control").numeric(o?.common?.max)?Number(o.common.max):null,
                 write:!!o?.common?.write,
                 type:o?.common?.type||null
             };
@@ -141,13 +141,13 @@ class EnergyPilot extends utils.Adapter {
         return 1;
     }
 
-    async getNum(id, factor=1, quantity=null) {
+    async getNum(id, factor=1, quantity=null, forecast=false) {
         if (!id) return {valid:false,value:0,age:Infinity,unit:""};
         try {
             const s = await this.getForeignStateAsync(id);
-            if (!s || s.val === null || s.val === undefined || Number.isNaN(Number(s.val))) return {valid:false,value:0,age:Infinity,unit:""};
+            if (!s || !require("./lib/battery-control").numeric(s.val)) return {valid:false,value:0,age:Infinity,unit:""};
             const age = Date.now() - (s.ts || 0);
-            const valid = age <= Math.max(5000, Number(this.config.staleSec||30)*1000);
+            const valid = Number.isFinite(age) && age >= 0 && age <= (forecast ? Math.max(1, Number(this.config.forecastMaxAgeHours ?? 48))*3600000 : Math.max(5000, Number(this.config.staleSec||30)*1000));
             const unit=await this.sourceUnit(id);
             const normalized=Number(s.val)*factor*(quantity?this.unitFactor(unit,quantity):1);
             return {valid,value:normalized,age,unit};
@@ -156,8 +156,8 @@ class EnergyPilot extends utils.Adapter {
     async getAny(id) { if (!id) return {valid:false,value:null}; try { const s=await this.getForeignStateAsync(id); return {valid:!!s && Date.now()-(s.ts||0)<=Number(this.config.staleSec||30)*1000,value:s?.val}; } catch { return {valid:false,value:null}; } }
     async write(id, value, reason) {
         if (!id) return;
-        if (this.config.dryRun) { this.log.debug(`[DRY] ${id} <= ${value} (${reason})`); return; }
-        try { await this.setForeignStateAsync(id, value, false); } catch(e) { this.log.warn(`Write failed ${id}: ${e.message}`); }
+        if (this.config.dryRun) { this.log.debug(`[DRY] ${id} <= ${value} (${reason})`); return true; }
+        try { await this.setForeignStateAsync(id, value, false); return true; } catch(e) { this.log.warn(`Write failed ${id}: ${e.message}`); return false; }
     }
 
     normalizeGrid(raw) { return this.config.gridSign === "exportPositive" ? -raw : raw; }
@@ -185,13 +185,13 @@ class EnergyPilot extends utils.Adapter {
             if(!id) return {valid:false,value:null};
             try {
                 const st=await this.getForeignStateAsync(id);
-                const value=Number(st?.val);
-                return {valid:!!st && Number.isFinite(value),value:Number.isFinite(value)?value:null,ts:st?.ts||0,raw:st?.val};
+                const value=require("./lib/battery-control").numeric(st?.val)?Number(st.val):NaN;
+                return {valid:!!st && Number.isFinite(value) && Date.now()-(st.ts||0)<=Number(this.config.forecastMaxAgeHours ?? 48)*3600000,value:Number.isFinite(value)?value:null,ts:st?.ts||0,raw:st?.val};
             } catch(e) { return {valid:false,value:null,error:e.message}; }
         };
         const readForecastAny=async id=>{
             if(!id) return {valid:false,value:null};
-            try { const st=await this.getForeignStateAsync(id); return {valid:!!st,value:st?.val,ts:st?.ts||0}; }
+            try { const st=await this.getForeignStateAsync(id); return {valid:!!st && st.val!==null && st.val!==undefined && Date.now()-(st.ts||0)<=Number(this.config.forecastMaxAgeHours ?? 48)*3600000,value:st?.val,ts:st?.ts||0}; }
             catch(e) { return {valid:false,value:null,error:e.message}; }
         };
         const findKey=(row,...names)=>{
@@ -223,7 +223,7 @@ class EnergyPilot extends utils.Adapter {
             const hourly=[];
             for(const channel of Object.keys(byHour).map(Number).sort((a,b)=>a-b)){
                 const row=byHour[channel];
-                const [temperature,clouds,humidity,windSpeed,windGust,rainProbability,rain,time,end,night]=await Promise.all([
+                const [temperature,clouds,humidity,windSpeed,windGust,rainProbability,rain,time,end,night,feelsLike]=await Promise.all([
                     readForecastNumber(findKey(row,"temperature")),
                     readForecastNumber(findKey(row,"clouds")),
                     readForecastNumber(findKey(row,"humidity")),
@@ -233,13 +233,16 @@ class EnergyPilot extends utils.Adapter {
                     readForecastNumber(findKey(row,"rain")),
                     readForecastAny(findKey(row,"time")),
                     readForecastAny(findKey(row,"end")),
-                    readForecastAny(findKey(row,"night"))
+                    readForecastAny(findKey(row,"night")),
+                    readForecastNumber(findKey(row,"temperature_feels_like"))
                 ]);
                 hourly.push({
                     channel,
                     time:time.valid?String(time.value):"",
                     end:end.valid?end.value:null,
-                    night:night.valid?!!night.value:null,
+                    night:night.valid?[true,1,"1","true"].includes(night.value):null,
+                    feelsLike:feelsLike.valid?feelsLike.value:null,
+                    minuteOfDay:require("./lib/weather-time").minuteOfDay(time.valid?time.value:null,channel),
                     temperature:temperature.valid?temperature.value:null,
                     clouds:clouds.valid?clouds.value:null,
                     humidity:humidity.valid?humidity.value:null,
@@ -250,6 +253,7 @@ class EnergyPilot extends utils.Adapter {
                 });
             }
 
+            hourly.sort((a,b)=>a.minuteOfDay-b.minuteOfDay);
             const nums=(key)=>hourly.map(x=>x[key]).filter(Number.isFinite);
             const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
             const temperatures=nums("temperature"), clouds=nums("clouds"), humidities=nums("humidity"), winds=nums("windSpeed"), gusts=nums("windGust"), rainProbabilities=nums("rainProbability"), rains=nums("rain");
@@ -300,7 +304,7 @@ class EnergyPilot extends utils.Adapter {
                 tomorrowMax:tomorrow.max,
                 clouds:avg(clouds),humidity:avg(humidities),wind:avg(winds),windGust:avg(gusts),rainProbability:avg(rainProbabilities),rain:avg(rains),
                 samples:temperatures.length,
-                hourlyRoot,dailyRoot,
+                hourlyRoot,dailyRoot,hourly,
                 hourChannels:Object.keys(byHour).length,
                 hourlyStates:hourlyIds.length,dailyStates:dailyIds.length,
                 todayDailyTemperatureValues:today.temperatureValues,tomorrowDailyTemperatureValues:tomorrow.temperatureValues,
@@ -315,14 +319,14 @@ class EnergyPilot extends utils.Adapter {
     }
 
     async forecast() {
-        const today=await this.getNum(this.config.pvForecastTodayState,1,"energyKWh");
-        const rem=await this.getNum(this.config.pvForecastRemainingState,1,"energyKWh");
-        const tomorrow=await this.getNum(this.config.pvForecastTomorrowState,1,"energyKWh");
-        const next3=await this.getNum(this.config.pvForecastNext3hState,1,"energyKWh");
+        const today=await this.getNum(this.config.pvForecastTodayState,1,"energyKWh",true);
+        const rem=await this.getNum(this.config.pvForecastRemainingState,1,"energyKWh",true);
+        const tomorrow=await this.getNum(this.config.pvForecastTomorrowState,1,"energyKWh",true);
+        const next3=await this.getNum(this.config.pvForecastNext3hState,1,"energyKWh",true);
         let wx={valid:false,tempAvg:null,tempMin:null,tempMax:null,tomorrowMin:null,tomorrowMax:null,clouds:null,humidity:null,wind:null,rainProbability:null,samples:0,hourChannels:0};
         if(this.config.weatherSourceMode==="daswetter") wx=await this.readDasWetterForecast();
         else if(this.config.weatherSourceMode!=="none"){
-            const tempNow=await this.getNum(this.config.weatherTempNowState), tempAvg=await this.getNum(this.config.weatherTempAvgState), tempMax=await this.getNum(this.config.weatherTempMaxState), clouds=await this.getNum(this.config.weatherCloudState);
+            const tempNow=await this.getNum(this.config.weatherTempNowState,1,null,true), tempAvg=await this.getNum(this.config.weatherTempAvgState,1,null,true), tempMax=await this.getNum(this.config.weatherTempMaxState,1,null,true), clouds=await this.getNum(this.config.weatherCloudState,1,null,true);
             const t=tempAvg.valid?tempAvg.value:(tempNow.valid?tempNow.value:null);
             wx={valid:t!==null,tempAvg:t,tempMin:t,tempMax:tempMax.valid?tempMax.value:t,tomorrowMin:null,tomorrowMax:null,clouds:clouds.valid?clouds.value:null,humidity:null,wind:null,rainProbability:null,samples:t!==null?1:0,hourChannels:0};
         }
@@ -382,90 +386,8 @@ class EnergyPilot extends utils.Adapter {
         this.thermal.set(key,x); return x.active;
     }
 
-    async batteryControl(surplusW, gridW, b, f, decisions) {
-        if (!b.enabled || !this.config.batteryChargeControlEnabled || !b.socValid) return 0;
-        const soc=b.soc; let chargeW=Math.max(0,surplusW), dischargeW=Math.max(0,gridW);
-        if(soc>=Number(this.config.batteryMaxSoc||100)) chargeW=0;
-        if(soc<=Number(this.config.batteryReserveSoc||20)) dischargeW=0;
-        if(this.config.batteryForecastControl && f.pvRemaining>0 && soc>=Number(this.config.batteryMinSoc||10)) {
-            const targetGap=Math.max(0,Number(this.config.batteryTargetSoc||80)-soc)/100;
-            const expectedFlexible=Math.max(0,f.pvRemaining - Math.max(0,f.consumption*0.5));
-            if(expectedFlexible>targetGap*10) chargeW*=0.45;
-        }
-
-        const cm=await this.batteryControlMeta();
-        const quantity=cm.quantity;
-        const manualCharge=Math.max(0,Number(this.config.batteryMaxChargeValue||0));
-        const manualDischarge=Math.max(0,Number(this.config.batteryMaxDischargeValue||0));
-        let dynamicCharge=await this.readLimitState(this.config.batteryDynamicMaxChargeState,quantity);
-        let dynamicDischarge=await this.readLimitState(this.config.batteryDynamicMaxDischargeState,quantity);
-        let effectiveCharge=manualCharge; let effectiveDischarge=manualDischarge;
-        if(dynamicCharge!==null) effectiveCharge=Math.min(effectiveCharge,dynamicCharge);
-        if(dynamicDischarge!==null) effectiveDischarge=Math.min(effectiveDischarge,dynamicDischarge);
-
-        const status={layout:cm.layout,quantity,unit:cm.meta.unit||"",objectMin:cm.meta.min,objectMax:cm.meta.max,objectWritable:cm.meta.write,manualMaxCharge:manualCharge,manualMaxDischarge:manualDischarge,dynamicMaxCharge:dynamicCharge,dynamicMaxDischarge:dynamicDischarge,effectiveMaxCharge:effectiveCharge,effectiveMaxDischarge:effectiveDischarge,requestedChargeW:Math.round(chargeW),requestedDischargeW:Math.round(dischargeW),applied:null,warning:""};
-        if(quantity==="unknown") { status.warning="Steuergröße konnte nicht erkannt werden"; decisions.push(`Batterie: ${status.warning}`); await this.setStateAsync("diagnostics.batteryControl",JSON.stringify(status),true); return 0; }
-        if(quantity!=="boolean" && effectiveCharge<=0 && effectiveDischarge<=0) { status.warning="Maximale Lade-/Entladewerte sind 0"; decisions.push(`Batterie: ${status.warning}`); await this.setStateAsync("diagnostics.batteryControl",JSON.stringify(status),true); return 0; }
-
-        if(this.config.batteryExternalEnableState) await this.write(this.config.batteryExternalEnableState,true,"external battery control enable");
-
-        const voltsState=await this.getNum(this.config.batteryVoltageState);
-        const volts=voltsState.valid&&voltsState.value>1?voltsState.value:Math.max(1,Number(this.config.batteryFixedVoltageV||400));
-        const toControl=(powerW,direction)=>{
-            const limit=direction==="charge"?effectiveCharge:effectiveDischarge;
-            if(quantity==="power") return Math.min(limit,powerW);
-            if(quantity==="current") return Math.min(limit,powerW/volts);
-            if(quantity==="percent") {
-                const ref=Number(direction==="charge"?this.config.batteryReferenceChargePowerW:this.config.batteryReferenceDischargePowerW)||0;
-                if(ref<=0){status.warning=`Referenz-${direction==="charge"?"Lade":"Entlade"}leistung für Prozentsteuerung fehlt`;return 0;}
-                return Math.min(limit,100*powerW/ref);
-            }
-            if(quantity==="boolean") return powerW>Number(this.config.gridReserveW||200);
-            return 0;
-        };
-        let chargeVal=toControl(chargeW,"charge"), dischargeVal=toControl(dischargeW,"discharge");
-        chargeVal=Math.round(Number(chargeVal)*100)/100; dischargeVal=Math.round(Number(dischargeVal)*100)/100;
-
-        let appliedChargeControl=chargeVal;
-        if(cm.layout==="single") {
-            if(!cm.primary){status.warning="Bidirektionaler Sollwert fehlt"; appliedChargeControl=0;}
-            else {
-                let setpoint=0;
-                if(chargeVal>0) setpoint=this.config.batteryControlSign==="chargePositive"?chargeVal:-chargeVal;
-                else if(dischargeVal>0) setpoint=this.config.batteryControlSign==="chargePositive"?-dischargeVal:dischargeVal;
-                setpoint=this.clampByObjectRange(setpoint,cm.meta);
-                if(chargeVal>0) appliedChargeControl=Math.abs(setpoint); else appliedChargeControl=0;
-                await this.write(cm.primary,setpoint,"battery bidirectional optimization");
-                status.applied={state:cm.primary,value:setpoint};
-            }
-        } else {
-            if(this.config.batteryChargeSetState){
-                const meta=await this.sourceMeta(this.config.batteryChargeSetState);
-                chargeVal=this.clampByObjectRange(chargeVal,meta);
-                await this.write(this.config.batteryChargeSetState,chargeVal,"battery charge optimization");
-            }
-            if(this.config.batteryDischargeSetState){
-                const meta=await this.sourceMeta(this.config.batteryDischargeSetState);
-                dischargeVal=this.clampByObjectRange(dischargeVal,meta);
-                await this.write(this.config.batteryDischargeSetState,dischargeVal,"battery discharge optimization");
-            }
-            appliedChargeControl=chargeVal;
-            status.applied={chargeState:this.config.batteryChargeSetState||"",chargeValue:chargeVal,dischargeState:this.config.batteryDischargeSetState||"",dischargeValue:dischargeVal};
-        }
-        if(this.config.batteryExternalStatusState){ const st=await this.getAny(this.config.batteryExternalStatusState); status.externalStatus=st.valid?st.value:null; }
-        status.voltageV=quantity==="current"?volts:null;
-        const controlToPower=(value,direction)=>{
-            if(quantity==="power") return Math.max(0,value);
-            if(quantity==="current") return Math.max(0,value*volts);
-            if(quantity==="percent") { const ref=Number(direction==="charge"?this.config.batteryReferenceChargePowerW:this.config.batteryReferenceDischargePowerW)||0; return Math.max(0,ref*value/100); }
-            if(quantity==="boolean") return value?Math.max(0,Math.min(chargeW,surplusW)):0;
-            return 0;
-        };
-        const allocatedChargeW=Math.min(surplusW,controlToPower(appliedChargeControl,"charge"));
-        status.allocatedChargeW=Math.round(allocatedChargeW);
-        await this.setStateAsync("diagnostics.batteryControl",JSON.stringify(status),true);
-        decisions.push(`Batterie: ${quantity}, Laden ${chargeVal}, Entladen ${dischargeVal}${status.warning?` – ${status.warning}`:""}`);
-        return Math.max(0,allocatedChargeW);
+    async batteryControl(...args) {
+        return require("./lib/battery-control").batteryControl.apply(this, args);
     }
 
     async heatPumpControl(surplusW, decisions, activeLoads) {
@@ -495,10 +417,13 @@ class EnergyPilot extends utils.Adapter {
         const room=await this.getNum(c.roomTempState);
         const hot=(f.temp!==null?f.temp:0)>=Number(this.config.coolingBalanceTempC||24);
         const cold=(f.temp!==null?f.temp:99)<=Number(this.config.heatingBalanceTempC||15);
-        const active=this.thermalDecision(`climate${i}`,surplusW>=Number(c.surplusOnW||1000),surplusW<=Number(c.surplusOffW||300),c.onDelaySec,c.offDelaySec);
+        const key=`climate${i}`;
+        const previous=this.thermal.get(key);
+        const active=this.thermalDecision(key,surplusW>=Number(c.surplusOnW||1000),surplusW<=Number(c.surplusOffW||300),c.onDelaySec,c.offDelaySec);
         if(active && hot){await this.write(c.modeSetState,c.coolModeValue||"cool",`climate ${c.name} PV cooling`);await this.write(c.targetSetState,Number(c.pvCoolTarget||23.5),`climate ${c.name} PV cooling`);activeLoads.push({name:c.name||`Climate ${i+1}`,priority:Number(c.priority||40),type:"pvCooling"});}
         else if(active && cold){await this.write(c.modeSetState,c.heatModeValue||"heat",`climate ${c.name} PV heating`);await this.write(c.targetSetState,Number(c.pvHeatTarget||22),`climate ${c.name} PV heating`);activeLoads.push({name:c.name||`Climate ${i+1}`,priority:Number(c.priority||40),type:"pvHeating"});}
-        else if(!active){ if(hot)await this.write(c.targetSetState,Number(c.normalCoolTarget||24.5),`climate ${c.name} normal target`); if(cold)await this.write(c.targetSetState,Number(c.normalHeatTarget||21),`climate ${c.name} normal target`); }
+        else if(!active){ const lastMode=previous?.boostMode; if(lastMode==="cool" || (!lastMode && hot))await this.write(c.targetSetState,Number(c.normalCoolTarget??24.5),`climate ${c.name} normal target`); if(lastMode==="heat" || (!lastMode && cold))await this.write(c.targetSetState,Number(c.normalHeatTarget??21),`climate ${c.name} normal target`); }
+        if(active && (hot||cold)) this.thermal.get(key).boostMode=hot?"cool":"heat";
         decisions.push(`${c.name||`Climate ${i+1}`}: ${active?(hot?"PV cooling":cold?"PV heating":"hold"):"normal"}${room.valid?` room ${room.value}°C`:""}`);
         return active && (hot||cold) ? Math.min(surplusW, Number(c.expectedPowerW||800)) : 0;
     }
@@ -531,16 +456,22 @@ class EnergyPilot extends utils.Adapter {
     }
 
     async runCycle() {
+        if (this.cycleRunning) return;
+        this.cycleRunning = true;
+        try { await this.runCycleOnce(); } finally { this.cycleRunning = false; }
+    }
+
+    async runCycleOnce() {
         if(!this.config.emsEnabled){await this.setStateAsync("control.mode","disabled",true);return;}
         const gRaw=await this.getNum(this.config.gridPowerState,1,"power"), pv=await this.getNum(this.config.pvPowerState,1,"power"), houseCfg=await this.getNum(this.config.housePowerState,1,"power"), b=await this.batterySnapshot(), f=await this.forecast();
         const grid=gRaw.valid?this.normalizeGrid(gRaw.value):0;
         let house=houseCfg.valid?houseCfg.value:0;
         if(!houseCfg.valid && gRaw.valid && pv.valid) house=Math.max(0,pv.value+grid-(b.power||0));
         const dataValid=gRaw.valid && pv.valid;
-        const reserve=Number(this.config.gridReserveW||200);
-        const surplus=Math.max(0,-grid-reserve);
+        const reserve=Number(this.config.gridReserveW ?? 200);
+        const surplus=Math.max(0,Number(this.config.targetGridW ?? 0)-grid-reserve);
         const decisions=[], activeLoads=[];
-        await this.updateLearning(house,f.temp);
+        await this.updateLearning(dataValid ? house : NaN,f.temp);
         if(dataValid){
             const climateRows=Array.isArray(this.config.climates)?this.config.climates:[];
             const actions=[
