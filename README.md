@@ -228,3 +228,14 @@ Energy Pilot befindet sich in aktiver Entwicklung. Schreibzugriffe auf Wechselri
 ## Lizenz
 
 MIT
+
+
+## Version 0.3.2
+
+Die Änderungen, Migrationshinweise und Grenzen dieser Version stehen in den [deutschen Versionshinweisen](RELEASE_NOTES_0.3.2_DE.md). Für Batterien werden manuelle Grenzen immer in W, A oder % eingetragen; Zielobjekte dürfen kW oder mA verwenden. Boolean benötigt getrennte Freigaben und Grenzen 0/1. Ein konfigurierter, aber veralteter dynamischer Grenzwert sperrt die betreffende Richtung.
+
+`forecastMaxAgeHours` (Standard 48 Stunden) gilt für Wetter- und PV-Prognosen unabhängig vom Echtzeit-Timeout. `daswetter.0.location_1.ForecastHourly.Hour_1..Hour_24` wird anhand von `time` als Tagesuhrzeit geordnet; `ForecastDaily.Day_1` steht für heute und `Day_2` für morgen. Die Tagesfelder einschließlich `date` werden eingelesen; eine kalenderübergreifende Ladeplanung ist nicht implementiert.
+
+Prüfung mit Node >=20: `npm run check` oder ohne npm `node --test test/*.test.js`. Tests simulieren ioBroker; Hardware- und Admin-Praxistests sind separat erforderlich. Die GitHub-Workflow-Matrix prüft Node 20, 22 und 24.
+
+Die Wallbox-Capabilities sind ausschließlich als Architekturvertrag hinterlegt. Es werden keine Wallbox-States geschrieben. Gerätezuordnung für go-e CORE erfolgt später anhand realer ioBroker-Objekte. Manuelle Klima-Overrides sind ebenfalls noch nicht aktiv.
